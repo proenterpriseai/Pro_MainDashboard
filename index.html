@@ -120,6 +120,20 @@ body{font-family:'Pretendard',sans-serif;background:#000;color:#e2e8f0;overflow:
 .auth-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none;box-shadow:none;}
 .auth-toggle{text-align:center;margin-top:18px;font-size:13px;color:rgba(255,255,255,0.4);}
 .auth-toggle a{color:#6090ff;cursor:pointer;text-decoration:none;font-weight:500;}
+.logout-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(6px);z-index:9000;display:none;align-items:center;justify-content:center;animation:modalFadeIn 0.2s ease;}
+.logout-modal-overlay.show{display:flex;}
+.logout-modal{width:100%;max-width:360px;padding:32px 28px 24px;border-radius:18px;background:rgba(15,15,30,0.95);border:1px solid rgba(255,255,255,0.1);backdrop-filter:blur(20px);box-shadow:0 0 60px rgba(39,57,140,0.2);text-align:center;animation:modalSlideUp 0.25s ease;}
+.logout-modal-icon{width:52px;height:52px;border-radius:50%;background:rgba(239,68,68,0.12);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:22px;color:#f87171;}
+.logout-modal-title{font-size:17px;font-weight:700;color:#fff;margin-bottom:8px;}
+.logout-modal-desc{font-size:13px;color:rgba(255,255,255,0.45);line-height:1.5;margin-bottom:24px;}
+.logout-modal-btns{display:flex;gap:10px;}
+.logout-modal-btn{flex:1;padding:11px 0;border-radius:10px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;transition:all 0.2s;border:none;}
+.logout-modal-btn.cancel{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.7);}
+.logout-modal-btn.cancel:hover{background:rgba(255,255,255,0.1);color:#fff;}
+.logout-modal-btn.confirm{background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;box-shadow:0 4px 15px rgba(239,68,68,0.3);}
+.logout-modal-btn.confirm:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(239,68,68,0.4);}
+@keyframes modalFadeIn{from{opacity:0}to{opacity:1}}
+@keyframes modalSlideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 .auth-toggle a:hover{text-decoration:underline;}
 .auth-error{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#fca5a5;display:none;}
 .auth-remember{display:flex;align-items:center;gap:6px;font-size:12px;color:rgba(255,255,255,0.4);margin:-4px 0 8px;cursor:pointer;}
@@ -618,7 +632,13 @@ function doLogin() {
 
 /* ── 로그아웃 ── */
 function doLogout() {
-  if (!confirm('로그아웃 하시겠습니까?')) return;
+  document.getElementById('logoutModal').classList.add('show');
+}
+function closeLogoutModal() {
+  document.getElementById('logoutModal').classList.remove('show');
+}
+function confirmLogout() {
+  closeLogoutModal();
   sessionStorage.removeItem('adminDashboardOpen');
   auth.signOut();
 }
@@ -1157,5 +1177,18 @@ if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js').catch(function(){});
 }
 </script>
+
+<div class="logout-modal-overlay" id="logoutModal">
+  <div class="logout-modal">
+    <div class="logout-modal-icon"><i class="fas fa-right-from-bracket"></i></div>
+    <div class="logout-modal-title">로그아웃</div>
+    <div class="logout-modal-desc">현재 세션을 종료하고 로그인 화면으로 돌아갑니다.</div>
+    <div class="logout-modal-btns">
+      <button class="logout-modal-btn cancel" onclick="closeLogoutModal()">취소</button>
+      <button class="logout-modal-btn confirm" onclick="confirmLogout()">로그아웃</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>

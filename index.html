@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pro Enterprise AI</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0a1628">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+<style>
+/* ── 로딩 스플래시 ── */
+.splash-screen{position:fixed;inset:0;background:#050510;z-index:9999;transition:opacity 0.3s;}
+.splash-screen.hide{opacity:0;pointer-events:none;}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;}
+body{font-family:'Pretendard',sans-serif;background:#000;color:#e2e8f0;overflow:hidden;display:flex;align-items:center;justify-content:center;}
+
+/* ── 입장 애니메이션 ── */
+@keyframes fadeUp{0%{opacity:0;transform:translateY(24px);}100%{opacity:1;transform:translateY(0);}}
+.fade-up{opacity:0;animation:fadeUp 0.7s cubic-bezier(0.22,1,0.36,1) forwards;}
+
+/* ── 글로잉 보더 공통 ── */
+.glow-target{--glow-start:0;--glow-spread:40;--glow-active:0;--glow-border:2px;}
+.glow-border{position:absolute;inset:calc(-1 * var(--glow-border));border-radius:inherit;border:var(--glow-border) solid transparent;pointer-events:none;z-index:10;background:radial-gradient(circle,#6090ff 10%,transparent 20%),radial-gradient(circle at 40% 40%,#27398C 5%,transparent 15%),radial-gradient(circle at 60% 60%,#3b82f6 10%,transparent 20%),repeating-conic-gradient(from calc((var(--glow-start) - var(--glow-spread))*1deg) at 50% 50%,#6090ff 0%,#27398C calc(25% / 5),#3b82f6 calc(50% / 5),#a8c4ff calc(75% / 5),#6090ff calc(100% / 5));background-attachment:fixed;-webkit-mask-image:linear-gradient(#0000,#0000),conic-gradient(from calc((var(--glow-start) - var(--glow-spread))*1deg),transparent 0deg,#fff,transparent calc(var(--glow-spread)*2deg));-webkit-mask-clip:padding-box,border-box;-webkit-mask-composite:source-in;mask-image:linear-gradient(#0000,#0000),conic-gradient(from calc((var(--glow-start) - var(--glow-spread))*1deg),transparent 0deg,#fff,transparent calc(var(--glow-spread)*2deg));mask-clip:padding-box,border-box;mask-composite:intersect;opacity:var(--glow-active);transition:opacity 0.3s;}
+
+/* ── 히어로 프레임 ── */
+.hero-frame{position:relative;width:calc(100% - 48px);max-width:1260px;height:calc(100vh - 48px);max-height:860px;border-radius:24px;border:1px solid rgba(255,255,255,0.1);background:#050510;overflow:visible;display:flex;flex-direction:column;box-shadow:0 0 0 1px rgba(255,255,255,0.05),0 0 80px rgba(39,57,140,0.08);}
+.hero-frame>.dot-grid,.hero-frame>.mouse-glow,.hero-frame>.content{overflow:hidden;border-radius:inherit;}
+
+/* ── Aurora 캔버스 ── */
+#auroraCanvas{position:absolute;top:0;left:0;width:100%;height:100%;z-index:0;border-radius:inherit;overflow:hidden;}
+
+/* ── 대각선 빛 스윕 ── */
+@keyframes diagonalSweep{0%{background-position:-100% -100%;}50%{background-position:200% 200%;}100%{background-position:-100% -100%;}}
+.diagonal-beam{position:absolute;top:0;left:0;width:100%;height:100%;z-index:1;border-radius:inherit;overflow:hidden;pointer-events:none;background:linear-gradient(135deg,transparent 30%,rgba(96,144,255,0.07) 42%,rgba(255,255,255,0.05) 50%,rgba(96,144,255,0.07) 58%,transparent 70%);background-size:300% 300%;animation:diagonalSweep 20s ease-in-out infinite;}
+
+/* ── 도트 그리드 ── */
+.dot-grid{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;background:radial-gradient(circle,rgba(255,255,255,0.04) 1px,transparent 1px);background-size:28px 28px;z-index:1;}
+
+/* ── 마우스 추적 글로우 ── */
+.mouse-glow{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1;opacity:0;transition:opacity 0.4s;}
+.hero-frame:hover .mouse-glow{opacity:1;}
+
+/* ── 컨텐츠 래퍼 ── */
+.content{position:relative;z-index:2;display:flex;flex-direction:column;height:100%;padding:28px 36px 24px;}
+
+/* ── 로고 바 ── */
+.logo-bar{margin-bottom:auto;flex-shrink:0;}
+.logo-bar img{height:34px;filter:brightness(1.1);}
+
+/* ── 히어로 콘텐츠 + 플로팅 ── */
+@keyframes heroFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
+.hero-content{text-align:center;flex-shrink:0;padding:0 20px;margin-bottom:auto;animation:heroFloat 6s ease-in-out infinite;}
+.hero-badge{display:inline-block;padding:6px 18px;border-radius:50px;border:1px solid rgba(60,100,255,0.25);background:rgba(30,60,200,0.1);font-size:13px;color:rgba(255,255,255,0.65);margin-bottom:22px;backdrop-filter:blur(8px);box-shadow:0 0 20px rgba(30,60,200,0.1);letter-spacing:0.3px;}
+.hero-badge .bi{color:#6090ff;margin-right:7px;}
+.hero-title{font-size:clamp(32px,4.5vw,52px);font-weight:800;line-height:1.25;margin-bottom:16px;letter-spacing:-1.5px;}
+.hero-title .t1{background:linear-gradient(to bottom,#fff,rgba(255,255,255,0.8));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.hero-title .t2{background:linear-gradient(to right,#93b4ff,rgba(255,255,255,0.9),#fca5b5);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.hero-sub{font-size:clamp(13px,1.2vw,16px);color:#fff;line-height:1.7;max-width:500px;margin:0 auto;}
+
+/* ── 캐러셀 ── */
+.carousel-wrapper{position:relative;flex-shrink:0;margin-top:auto;padding:0 40px;}
+.carousel-track{display:flex;gap:18px;transition:transform 0.5s cubic-bezier(0.4,0,0.2,1);will-change:transform;}
+.carousel-viewport{overflow:hidden;}
+.carousel-btn{position:absolute;top:50%;transform:translateY(-50%);width:38px;height:38px;border-radius:50%;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.05);backdrop-filter:blur(12px);color:rgba(255,255,255,0.5);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.3s;z-index:5;}
+.carousel-btn:hover{background:rgba(255,255,255,0.1);color:#fff;border-color:rgba(255,255,255,0.25);}
+.carousel-btn.prev{left:-6px;}
+.carousel-btn.next{right:-6px;}
+.carousel-dots{display:flex;justify-content:center;gap:8px;margin-top:14px;}
+.carousel-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,0.15);cursor:pointer;transition:all 0.3s;}
+.carousel-dot.active{background:#6090ff;box-shadow:0 0 8px rgba(96,144,255,0.5);}
+
+/* ── 포트폴리오 카드 ── */
+.tool-card{position:relative;min-width:calc((100% - 36px)/3);flex-shrink:0;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:16px;cursor:pointer;transition:all 0.35s cubic-bezier(0.4,0,0.2,1);backdrop-filter:blur(12px);overflow:visible;}
+.tool-card:hover{transform:translateY(-6px);box-shadow:0 12px 40px rgba(0,0,0,0.5),inset 0 1px 0 rgba(255,255,255,0.05);}
+.tool-card:active{transform:translateY(-3px);}
+.tool-card .glow-border{--glow-border:1.5px;}
+
+/* 카드 프리뷰 영역 */
+.card-preview{position:relative;height:140px;border-radius:14px 14px 0 0;overflow:hidden;display:flex;align-items:center;justify-content:center;perspective:600px;}
+.card-preview-bg{position:absolute;inset:0;opacity:0.85;}
+.card-preview i{font-size:42px;color:rgba(255,255,255,0.9);filter:drop-shadow(0 4px 20px rgba(0,0,0,0.4));position:relative;z-index:2;transition:transform 0.5s;}
+.tool-card:hover .card-preview i{transform:rotateY(12deg) scale(1.08);}
+/* 장식 원 */
+.card-preview .deco-circle{position:absolute;border-radius:50%;border:1.5px solid rgba(255,255,255,0.1);z-index:1;}
+.card-preview .deco-circle.c1{width:100px;height:100px;top:-20px;right:-20px;border-color:rgba(255,255,255,0.08);}
+.card-preview .deco-circle.c2{width:60px;height:60px;bottom:-10px;left:-10px;border-color:rgba(255,255,255,0.06);}
+.card-preview .deco-grid{position:absolute;top:10px;left:10px;width:50px;height:50px;background:radial-gradient(circle,rgba(255,255,255,0.15) 1px,transparent 1px);background-size:8px 8px;z-index:1;opacity:0.5;}
+.card-preview img.preview-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;}
+
+/* 카드 바디 */
+.card-body{padding:16px 18px 14px;text-align:center;}
+.card-title{font-size:15px;font-weight:700;color:#fff;margin-bottom:6px;position:relative;display:inline-block;}
+.card-title .arrow{position:absolute;right:-20px;top:50%;transform:translateY(-50%);font-size:11px;color:rgba(255,255,255,0.15);transition:all 0.35s;}
+.tool-card:hover .card-title .arrow{color:rgba(255,255,255,0.5);transform:translateY(-50%) translateX(3px);}
+.card-desc{font-size:12px;color:#fff;line-height:1.55;margin-bottom:10px;}
+.card-tags{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;}
+.card-tags span{font-size:10px;padding:3px 9px;border-radius:50px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);letter-spacing:0.2px;}
+
+/* ── 푸터 ── */
+.footer{text-align:center;padding-top:14px;font-size:11px;color:#fff;flex-shrink:0;}
+
+/* ── Auth 화면 ── */
+.auth-overlay{position:fixed;inset:0;background:#050510;z-index:100;display:flex;align-items:center;justify-content:center;font-family:'Pretendard',sans-serif;}
+.auth-card{width:100%;max-width:420px;padding:40px 36px;border-radius:20px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);backdrop-filter:blur(20px);box-shadow:0 0 60px rgba(39,57,140,0.15);}
+.auth-logo{text-align:center;margin-bottom:28px;}
+.auth-logo img{height:30px;filter:brightness(1.1);}
+.auth-title{text-align:center;font-size:22px;font-weight:700;color:#fff;margin-bottom:6px;}
+.auth-subtitle{text-align:center;font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:28px;}
+.auth-input{display:block;width:100%;padding:12px 16px;margin-bottom:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);color:#fff;font-size:14px;font-family:inherit;outline:none;transition:border-color 0.3s;}
+.auth-input::placeholder{color:rgba(255,255,255,0.3);}
+.auth-input:focus{border-color:#6090ff;box-shadow:0 0 0 3px rgba(96,144,255,0.15);}
+.auth-btn{display:block;width:100%;padding:13px;border:none;border-radius:10px;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;font-size:15px;font-weight:600;font-family:inherit;cursor:pointer;transition:all 0.3s;margin-top:4px;}
+.auth-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(59,130,246,0.4);}
+.auth-btn:active{transform:translateY(0);}
+.auth-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none;box-shadow:none;}
+.auth-toggle{text-align:center;margin-top:18px;font-size:13px;color:rgba(255,255,255,0.4);}
+.auth-toggle a{color:#6090ff;cursor:pointer;text-decoration:none;font-weight:500;}
+.auth-toggle a:hover{text-decoration:underline;}
+.auth-error{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#fca5a5;display:none;}
+.auth-remember{display:flex;align-items:center;gap:6px;font-size:12px;color:rgba(255,255,255,0.4);margin:-4px 0 8px;cursor:pointer;}
+.auth-remember input{accent-color:#6090ff;}
+.auth-divider{display:flex;align-items:center;gap:12px;margin:18px 0;font-size:12px;color:rgba(255,255,255,0.25);}
+.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:rgba(255,255,255,0.08);}
+
+/* ── 상태 화면 (대기/거부/기기제한) ── */
+.status-screen{position:fixed;inset:0;background:#050510;z-index:100;display:flex;align-items:center;justify-content:center;text-align:center;font-family:'Pretendard',sans-serif;}
+.status-card{max-width:480px;padding:48px 40px;border-radius:20px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);backdrop-filter:blur(20px);}
+.status-icon{font-size:56px;margin-bottom:20px;}
+.status-title{font-size:22px;font-weight:700;color:#fff;margin-bottom:10px;}
+.status-desc{font-size:14px;color:rgba(255,255,255,0.5);line-height:1.7;margin-bottom:24px;}
+.status-btn{display:inline-block;padding:10px 28px;border:1px solid rgba(255,255,255,0.15);border-radius:10px;background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.7);font-size:13px;font-family:inherit;cursor:pointer;transition:all 0.3s;}
+.status-btn:hover{background:rgba(255,255,255,0.1);color:#fff;}
+
+/* ── 기기 목록 ── */
+.device-list{text-align:left;margin:20px 0;}
+.device-item{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);margin-bottom:8px;}
+.device-item i{font-size:20px;color:#6090ff;}
+.device-info{flex:1;}
+.device-info .label{font-size:13px;color:#fff;font-weight:500;}
+.device-info .date{font-size:11px;color:rgba(255,255,255,0.35);margin-top:2px;}
+.device-replace-btn{padding:6px 14px;border-radius:8px;border:1px solid rgba(239,68,68,0.3);background:rgba(239,68,68,0.1);color:#fca5a5;font-size:11px;font-family:inherit;cursor:pointer;transition:all 0.3s;}
+.device-replace-btn:hover{background:rgba(239,68,68,0.2);}
+
+/* ── 관리자 대시보드 ── */
+.admin-overlay{position:fixed;inset:0;background:#050510;z-index:200;display:none;flex-direction:column;font-family:'Pretendard',sans-serif;overflow-y:auto;}
+.admin-header{display:flex;align-items:center;justify-content:space-between;padding:20px 32px;border-bottom:1px solid rgba(255,255,255,0.06);}
+.admin-header h2{font-size:20px;font-weight:700;color:#fff;}
+.admin-close{padding:8px 20px;border:1px solid rgba(255,255,255,0.15);border-radius:8px;background:transparent;color:rgba(255,255,255,0.7);font-size:13px;font-family:inherit;cursor:pointer;transition:all 0.3s;}
+.admin-close:hover{background:rgba(255,255,255,0.05);color:#fff;}
+.admin-stats{display:flex;gap:16px;padding:20px 32px;flex-wrap:wrap;}
+.admin-stat{padding:16px 24px;border-radius:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);min-width:140px;text-align:center;}
+.admin-stat .num{font-size:28px;font-weight:700;color:#fff;}
+.admin-stat .lbl{font-size:12px;color:rgba(255,255,255,0.4);margin-top:4px;}
+.admin-search{padding:0 32px 16px;display:flex;gap:12px;}
+.admin-search input{flex:1;padding:10px 16px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);color:#fff;font-size:13px;font-family:inherit;outline:none;}
+.admin-search input:focus{border-color:#6090ff;}
+.custom-select{position:relative;min-width:120px;}
+.custom-select-selected{padding:10px 16px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);color:#fff;font-size:13px;cursor:pointer;text-align:center;user-select:none;font-family:inherit;}
+.custom-select-selected::after{content:'';display:inline-block;width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-top:5px solid rgba(255,255,255,0.5);margin-left:8px;vertical-align:middle;}
+.custom-select-options{display:none;position:absolute;top:100%;left:0;right:0;background:#1e1e2e;border:1px solid rgba(255,255,255,0.15);border-radius:8px;margin-top:4px;z-index:10;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,0.4);}
+.custom-select-options.open{display:block;}
+.custom-select-options div{padding:10px 16px;text-align:center;cursor:pointer;font-size:13px;transition:background 0.15s;}
+.custom-select-options div:hover{background:rgba(255,255,255,0.08);}
+.custom-select-options div.active{background:rgba(96,144,255,0.15);}
+.admin-table-wrap{padding:0 32px 32px;overflow-x:auto;}
+.admin-table{width:100%;border-collapse:collapse;font-size:13px;}
+.admin-table th{text-align:center;padding:10px 14px;color:rgba(255,255,255,0.5);font-weight:500;border-bottom:1px solid rgba(255,255,255,0.08);white-space:nowrap;}
+.admin-table td{text-align:center;padding:12px 14px;border-bottom:1px solid rgba(255,255,255,0.04);color:#e2e8f0;white-space:nowrap;}
+.admin-table tr:hover td{background:rgba(255,255,255,0.02);}
+.badge{display:inline-block;padding:3px 10px;border-radius:50px;font-size:11px;font-weight:500;}
+.badge-pending{background:rgba(245,158,11,0.15);color:#fbbf24;border:1px solid rgba(245,158,11,0.3);}
+.badge-approved{background:rgba(16,185,129,0.15);color:#34d399;border:1px solid rgba(16,185,129,0.3);}
+.badge-rejected{background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3);}
+.admin-action{padding:5px 12px;border-radius:6px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:rgba(255,255,255,0.6);font-size:11px;font-family:inherit;cursor:pointer;margin-right:4px;transition:all 0.2s;}
+.admin-action:hover{background:rgba(255,255,255,0.05);color:#fff;}
+.admin-action.approve{border-color:rgba(16,185,129,0.4);color:#34d399;}
+.admin-action.approve:hover{background:rgba(16,185,129,0.1);}
+.admin-action.reject{border-color:rgba(239,68,68,0.4);color:#f87171;}
+.admin-action.reject:hover{background:rgba(239,68,68,0.1);}
+.admin-action.withdraw{border-color:rgba(239,68,68,0.4);color:#f87171;}
+.admin-action.withdraw:hover{background:rgba(239,68,68,0.1);}
+.badge-withdrawn{background:rgba(100,100,100,0.15);color:#888;border:1px solid rgba(100,100,100,0.3);}
+
+/* ── 로고바 Auth 버튼 ── */
+.logo-bar{display:flex;align-items:center;justify-content:space-between;}
+.logo-actions{display:flex;gap:8px;}
+.logo-action-btn{padding:6px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.6);font-size:12px;font-family:inherit;cursor:pointer;transition:all 0.3s;display:none;}
+.logo-action-btn:hover{background:rgba(255,255,255,0.08);color:#fff;}
+.logo-action-btn.admin-btn{border-color:rgba(96,144,255,0.3);color:#6090ff;}
+
+/* ── 반응형 ── */
+@media(max-width:1000px){
+  .tool-card{min-width:calc((100% - 18px)/2);}
+  .hero-frame{height:auto;max-height:none;overflow-y:auto;}
+  body{overflow:auto;}
+}
+@media(max-width:640px){
+  .hero-frame{width:calc(100% - 20px);border-radius:18px;height:auto;max-height:none;}
+  body{overflow:auto;}
+  .content{padding:20px 16px 16px;}
+  .tool-card{min-width:calc(100% - 0px);}
+  .hero-title{letter-spacing:-1px;}
+  .carousel-wrapper{padding:0 30px;}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ 로딩 스플래시 ═══ -->
+<div class="splash-screen" id="splashScreen"></div>
+
+<!-- ═══ Auth 로그인/회원가입 ═══ -->
+<div class="auth-overlay" id="authScreen" style="display:none;">
+  <div class="auth-card">
+    <div class="auth-logo"><img src="logo.png" alt="Pro Enterprise AI"></div>
+    <!-- 로그인 폼 -->
+    <div id="loginForm">
+      <div class="auth-title">로그인</div>
+      <div class="auth-subtitle">Pro Enterprise AI에 오신 것을 환영합니다</div>
+      <div class="auth-error" id="loginError"></div>
+      <input class="auth-input" type="text" id="loginEmpNo" placeholder="사원번호" autocomplete="username">
+      <label class="auth-remember"><input type="checkbox" id="rememberEmpNo" checked> 사원번호 저장</label>
+      <input class="auth-input" type="email" id="loginEmail" placeholder="이메일 주소" autocomplete="email">
+      <input class="auth-input" type="password" id="loginPw" placeholder="비밀번호" autocomplete="current-password">
+      <button class="auth-btn" id="loginBtn" onclick="doLogin()">로그인</button>
+      <div class="auth-toggle">계정이 없으신가요? <a onclick="toggleAuthForm('signup')">회원가입</a></div>
+    </div>
+    <!-- 회원가입 폼 -->
+    <div id="signupForm" style="display:none;">
+      <div class="auth-title">회원가입</div>
+      <div class="auth-subtitle">관리자 승인 후 서비스를 이용하실 수 있습니다</div>
+      <div class="auth-error" id="signupError"></div>
+      <input class="auth-input" type="text" id="signupEmpNo" placeholder="사원번호" autocomplete="username">
+      <input class="auth-input" type="text" id="signupName" placeholder="이름 (실명)" autocomplete="name">
+      <input class="auth-input" type="tel" id="signupPhone" placeholder="핸드폰 번호 (숫자만 입력)" inputmode="numeric" autocomplete="tel" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+      <input class="auth-input" type="email" id="signupEmail" placeholder="이메일 주소" autocomplete="email">
+      <input class="auth-input" type="password" id="signupPw" placeholder="비밀번호 (6자 이상)" autocomplete="new-password">
+      <input class="auth-input" type="password" id="signupPwConfirm" placeholder="비밀번호 확인" autocomplete="new-password">
+      <button class="auth-btn" id="signupBtn" onclick="doSignup()">회원가입</button>
+      <div class="auth-toggle">이미 계정이 있으신가요? <a onclick="toggleAuthForm('login')">로그인</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 승인 대기 화면 ═══ -->
+<div class="status-screen" id="pendingScreen" style="display:none;">
+  <div class="status-card">
+    <div class="status-icon">⏳</div>
+    <div class="status-title">승인 대기 중</div>
+    <div class="status-desc">회원가입이 완료되었습니다.<br>관리자 승인 후 서비스를 이용하실 수 있습니다.<br>승인이 완료되면 다시 로그인해 주세요.</div>
+    <button class="status-btn" onclick="doLogout()"><i class="fas fa-arrow-left"></i>&nbsp; 로그아웃</button>
+  </div>
+</div>
+
+<!-- ═══ 승인 거부 화면 ═══ -->
+<div class="status-screen" id="rejectedScreen" style="display:none;">
+  <div class="status-card">
+    <div class="status-icon">🚫</div>
+    <div class="status-title">접근이 제한되었습니다</div>
+    <div class="status-desc">관리자에 의해 접근이 거부되었습니다.<br>문의사항이 있으시면 관리자에게 연락해 주세요.</div>
+    <button class="status-btn" onclick="doLogout()"><i class="fas fa-arrow-left"></i>&nbsp; 로그아웃</button>
+  </div>
+</div>
+
+<!-- ═══ 기기 제한 화면 ═══ -->
+<div class="status-screen" id="deviceLimitScreen" style="display:none;">
+  <div class="status-card">
+    <div class="status-icon">📱</div>
+    <div class="status-title">기기 등록 초과</div>
+    <div class="status-desc">최대 2개의 기기만 등록할 수 있습니다.<br>기존 기기를 교체하려면 아래에서 선택해 주세요.</div>
+    <div class="device-list" id="deviceList"></div>
+    <button class="status-btn" onclick="doLogout()" style="margin-top:8px;"><i class="fas fa-arrow-left"></i>&nbsp; 로그아웃</button>
+  </div>
+</div>
+
+<!-- ═══ 관리자 대시보드 ═══ -->
+<div class="admin-overlay" id="adminDashboard">
+  <div class="admin-header">
+    <h2><i class="fas fa-shield-halved"></i>&nbsp; 관리자 대시보드</h2>
+    <button class="admin-close" onclick="closeAdmin()"><i class="fas fa-xmark"></i>&nbsp; 닫기</button>
+  </div>
+  <div class="admin-stats" id="adminStats"></div>
+  <div class="admin-search">
+    <input type="text" id="adminSearchInput" placeholder="이름 또는 이메일로 검색..." oninput="filterAdminTable()">
+    <div class="custom-select" id="adminFilterWrap">
+      <div class="custom-select-selected" id="adminFilterSelected" onclick="toggleCustomSelect()">전체</div>
+      <div class="custom-select-options" id="adminFilterOptions">
+        <div data-value="all" class="active" style="color:#fff;" onclick="selectFilterOption(this)">전체</div>
+        <div data-value="pending" style="color:#fbbf24;" onclick="selectFilterOption(this)">대기중</div>
+        <div data-value="approved" style="color:#34d399;" onclick="selectFilterOption(this)">승인됨</div>
+        <div data-value="rejected" style="color:#f87171;" onclick="selectFilterOption(this)">거부됨</div>
+        <div data-value="withdrawn" style="color:#888;" onclick="selectFilterOption(this)">탈퇴</div>
+      </div>
+    </div>
+  </div>
+  <div class="admin-table-wrap">
+    <table class="admin-table">
+      <thead><tr><th>사원번호</th><th>이름</th><th>핸드폰</th><th>이메일</th><th>상태</th><th>기기</th><th>가입일</th><th>최근 접속</th><th>관리</th></tr></thead>
+      <tbody id="adminTableBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="hero-frame glow-target" id="heroFrame" style="display:none;">
+  <div class="glow-border"></div>
+  <!-- Aurora WebGL 배경 -->
+  <canvas id="auroraCanvas"></canvas>
+  <div class="diagonal-beam"></div>
+  <div class="dot-grid"></div>
+  <div class="mouse-glow" id="mouseGlow"></div>
+
+  <div class="content">
+    <!-- 로고 -->
+    <div class="logo-bar fade-up" style="animation-delay:0.1s;">
+      <img src="logo.png" alt="Pro Enterprise AI">
+      <div class="logo-actions">
+        <button class="logo-action-btn admin-btn" id="adminOpenBtn" onclick="openAdmin()"><i class="fas fa-shield-halved"></i>&nbsp; 관리자</button>
+        <button class="logo-action-btn" id="logoutBtn" onclick="doLogout()"><i class="fas fa-right-from-bracket"></i>&nbsp; 로그아웃</button>
+      </div>
+    </div>
+
+    <!-- 히어로 (플로팅) -->
+    <div class="hero-content">
+      <div class="hero-badge fade-up" style="animation-delay:0.3s;"><span class="bi">✦</span>AI-Powered Pro Sales Tools</div>
+      <h1 class="hero-title fade-up" style="animation-delay:0.5s;"><span class="t1">보험 영업의 모든 것,</span><br><span class="t2">하나의 플랫폼에서</span></h1>
+      <p class="hero-sub fade-up" style="animation-delay:0.7s;">보장 분석부터 DB 영업관리, 통합 금융 계산기, 전문 비서 챗봇까지.<br>프로사업단을 위한 6가지 핵심 AI 시스템</p>
+    </div>
+
+    <!-- 캐러셀 카드 -->
+    <div class="carousel-wrapper fade-up" style="animation-delay:1s;">
+      <button class="carousel-btn prev" id="carouselPrev"><i class="fas fa-chevron-left"></i></button>
+      <div class="carousel-viewport">
+        <div class="carousel-track" id="carouselTrack">
+
+          <!-- 카드 1: 보장분석 리포트 -->
+          <div class="tool-card glow-target" onclick="window.open('https://pro-coverageanalysis.vercel.app','_blank')">
+            <div class="glow-border"></div>
+            <div class="card-preview">
+              <img class="preview-img" src="preview-analysis.webp" alt="보장분석" loading="lazy">
+              <div class="card-preview-bg" style="background:linear-gradient(135deg,#1e3a8a 0%,#3b82f6 50%,#60a5fa 100%);opacity:0.35;"></div>
+              <div class="deco-circle c1"></div>
+              <div class="deco-circle c2"></div>
+              <div class="deco-grid"></div>
+            </div>
+            <div class="card-body">
+              <div class="card-title">보장 분석 리포트 <i class="fas fa-arrow-right arrow"></i></div>
+              <div class="card-desc">AI가 자동으로 보장을 분석하고 전문 리포트를 생성합니다.</div>
+              <div class="card-tags"><span>AI 분석</span><span>자동화</span><span>9종 리포트</span></div>
+            </div>
+          </div>
+
+          <!-- 카드 2: DB 영업관리 -->
+          <div class="tool-card glow-target" onclick="window.open('https://pro-salessystem.vercel.app','_blank')">
+            <div class="glow-border"></div>
+            <div class="card-preview">
+              <img class="preview-img" src="preview-sales.webp" alt="DB영업관리" loading="lazy">
+              <div class="card-preview-bg" style="background:linear-gradient(135deg,#5b21b6 0%,#8b5cf6 50%,#a78bfa 100%);opacity:0.35;"></div>
+              <div class="deco-circle c1"></div>
+              <div class="deco-circle c2"></div>
+              <div class="deco-grid"></div>
+            </div>
+            <div class="card-body">
+              <div class="card-title">DB 영업관리 <i class="fas fa-arrow-right arrow"></i></div>
+              <div class="card-desc">고객 DB를 체계적으로 관리하고 영업 활동을 추적합니다.</div>
+              <div class="card-tags"><span>DB 관리</span><span>영업 추적</span><span>실시간 동기화</span></div>
+            </div>
+          </div>
+
+          <!-- 카드 3: 통합 계산기 -->
+          <div class="tool-card glow-target" onclick="window.open('https://procalculator.streamlit.app/','_blank')">
+            <div class="glow-border"></div>
+            <div class="card-preview">
+              <img class="preview-img" src="preview-calculator.webp" alt="통합계산기" loading="lazy">
+              <div class="card-preview-bg" style="background:linear-gradient(135deg,#065f46 0%,#10b981 50%,#34d399 100%);opacity:0.35;"></div>
+              <div class="deco-circle c1"></div>
+              <div class="deco-circle c2"></div>
+              <div class="deco-grid"></div>
+            </div>
+            <div class="card-body">
+              <div class="card-title">통합 금융 계산기 <i class="fas fa-arrow-right arrow"></i></div>
+              <div class="card-desc">모든 자산관리 분야를 실시간으로 계산합니다.</div>
+              <div class="card-tags"><span>부동산</span><span>세금</span><span>목적 자금</span><span>달러</span><span>은퇴자금</span><span>대출 상환</span></div>
+            </div>
+          </div>
+
+          <!-- 카드 4: 금융 & 보험 코치 -->
+          <div class="tool-card glow-target" onclick="window.open('https://gemini.google.com/gem/a21651eef85c','_blank')">
+            <div class="glow-border"></div>
+            <div class="card-preview">
+              <img class="preview-img" src="preview-coach.webp" alt="금융코치" loading="lazy">
+              <div class="card-preview-bg" style="background:linear-gradient(135deg,#92400e 0%,#f59e0b 50%,#fbbf24 100%);opacity:0.35;"></div>
+              <div class="deco-circle c1"></div>
+              <div class="deco-circle c2"></div>
+              <div class="deco-grid"></div>
+            </div>
+            <div class="card-body">
+              <div class="card-title">금융 & 보험 코치 <i class="fas fa-arrow-right arrow"></i></div>
+              <div class="card-desc">AI 전문가가 금융·보험 상담을 실시간 코칭합니다.</div>
+              <div class="card-tags"><span>AI 코칭</span><span>실시간 상담</span><span>금융 전문</span></div>
+            </div>
+          </div>
+
+          <!-- 카드 5: 민원 분쟁조정 전문가 -->
+          <div class="tool-card glow-target" onclick="window.open('https://gemini.google.com/gem/bad09ace91c8','_blank')">
+            <div class="glow-border"></div>
+            <div class="card-preview">
+              <img class="preview-img" src="preview-dispute.webp" alt="민원전문가" loading="lazy">
+              <div class="card-preview-bg" style="background:linear-gradient(135deg,#991b1b 0%,#ef4444 50%,#f87171 100%);opacity:0.35;"></div>
+              <div class="deco-circle c1"></div>
+              <div class="deco-circle c2"></div>
+              <div class="deco-grid"></div>
+            </div>
+            <div class="card-body">
+              <div class="card-title">민원 분쟁조정 전문가 <i class="fas fa-arrow-right arrow"></i></div>
+              <div class="card-desc">보험 민원 및 분쟁조정 대응 전략을 제시합니다.</div>
+              <div class="card-tags"><span>민원 대응</span><span>분쟁 조정</span><span>법률 전략</span></div>
+            </div>
+          </div>
+
+          <!-- 카드 6: 예상 보험금 수령 산출 전문가 -->
+          <div class="tool-card glow-target" onclick="window.open('https://gemini.google.com/gem/d3f5d0e6c6e4','_blank')">
+            <div class="glow-border"></div>
+            <div class="card-preview">
+              <img class="preview-img" src="preview-insurance.webp" alt="보험금산출" loading="lazy">
+              <div class="card-preview-bg" style="background:linear-gradient(135deg,#0e4166 0%,#0284c7 50%,#38bdf8 100%);opacity:0.35;"></div>
+              <div class="deco-circle c1"></div>
+              <div class="deco-circle c2"></div>
+              <div class="deco-grid"></div>
+            </div>
+            <div class="card-body">
+              <div class="card-title">예상 보험금 산출 전문가 <i class="fas fa-arrow-right arrow"></i></div>
+              <div class="card-desc">예상 보험금 수령액을 정밀하게 산출합니다.</div>
+              <div class="card-tags"><span>보험금 산출</span><span>수령액 예측</span><span>AI 분석</span></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      <button class="carousel-btn next" id="carouselNext"><i class="fas fa-chevron-right"></i></button>
+      <div class="carousel-dots" id="carouselDots"></div>
+    </div>
+
+    <div class="footer fade-up" style="animation-delay:1.3s;">&copy; 2026 Pro Enterprise AI. All rights reserved.</div>
+  </div>
+</div>
+
+<!-- Firebase SDK (compat) -->
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+<script>
+/* ═══════════════════════════════════════
+   Firebase Auth + Firestore 보안 시스템
+   ═══════════════════════════════════════ */
+var ADMIN_EMAILS = ['proenterpriseai@incarproent.com', 'proenterprise@incarproent.com', 'youra9ol2l8@gmail.com'];
+var MAX_DEVICES = 2;
+var DEVICE_FP_KEY = 'pro_device_fp';
+
+firebase.initializeApp({
+  apiKey: "AIzaSyCuc3x0mF6yfdvVvGrs4J2-rJBo2qB8_sk",
+  authDomain: "pro-enterprise-ai.firebaseapp.com",
+  projectId: "pro-enterprise-ai",
+  storageBucket: "pro-enterprise-ai.firebasestorage.app",
+  messagingSenderId: "13144153545",
+  appId: "1:13144153545:web:9c6d9df25d419a65c5dc18"
+});
+
+var auth = firebase.auth();
+var db = firebase.firestore();
+var _allUsers = [];
+
+/* ── 기기 핑거프린트 ── */
+function generateDeviceFingerprint() {
+  var cached = localStorage.getItem(DEVICE_FP_KEY);
+  if (cached) return cached;
+  var raw = [navigator.userAgent, screen.width+'x'+screen.height, screen.colorDepth, navigator.language, navigator.platform, new Date().getTimezoneOffset()].join('|');
+  var hash = 5381;
+  for (var i = 0; i < raw.length; i++) { hash = ((hash << 5) + hash) + raw.charCodeAt(i); hash = hash & hash; }
+  var fp = 'dev_' + Math.abs(hash).toString(36);
+  localStorage.setItem(DEVICE_FP_KEY, fp);
+  return fp;
+}
+
+function getDeviceLabel() {
+  var ua = navigator.userAgent;
+  var isMobile = /Mobile|Android|iPhone|iPad/i.test(ua);
+  var browser = /Edg/.test(ua) ? 'Edge' : /Chrome/.test(ua) ? 'Chrome' : /Safari/.test(ua) ? 'Safari' : /Firefox/.test(ua) ? 'Firefox' : 'Browser';
+  var os = /Windows/.test(ua) ? 'Windows' : /Mac/.test(ua) ? 'Mac' : /Android/.test(ua) ? 'Android' : /iPhone|iPad/.test(ua) ? 'iOS' : 'Other';
+  return browser + ' / ' + os + (isMobile ? ' (모바일)' : ' (PC)');
+}
+
+function getDeviceType() {
+  return /Mobile|Android|iPhone|iPad/i.test(navigator.userAgent) ? 'mobile' : 'pc';
+}
+
+/* ── 화면 전환 ── */
+function showScreen(screenId) {
+  ['authScreen','pendingScreen','rejectedScreen','deviceLimitScreen','heroFrame'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.style.display = (id === screenId) ? (id === 'heroFrame' ? 'flex' : 'flex') : 'none';
+  });
+  var logoutBtn = document.getElementById('logoutBtn');
+  var adminBtn = document.getElementById('adminOpenBtn');
+  if (logoutBtn) logoutBtn.style.display = (screenId === 'heroFrame') ? 'block' : 'none';
+  if (adminBtn) adminBtn.style.display = 'none';
+}
+
+/* ── 로그인/회원가입 폼 전환 ── */
+function toggleAuthForm(type) {
+  document.getElementById('loginForm').style.display = (type === 'login') ? 'block' : 'none';
+  document.getElementById('signupForm').style.display = (type === 'signup') ? 'block' : 'none';
+  document.getElementById('loginError').style.display = 'none';
+  document.getElementById('signupError').style.display = 'none';
+}
+
+/* ── 에러 메시지 한글화 ── */
+function getAuthErrorMsg(code) {
+  var map = {
+    'auth/email-already-in-use': '이미 가입된 이메일입니다.',
+    'auth/invalid-email': '올바른 이메일 형식이 아닙니다.',
+    'auth/weak-password': '비밀번호는 6자 이상이어야 합니다.',
+    'auth/user-not-found': '등록되지 않은 이메일입니다.',
+    'auth/wrong-password': '비밀번호가 일치하지 않습니다.',
+    'auth/invalid-credential': '이메일 또는 비밀번호가 올바르지 않습니다.',
+    'auth/too-many-requests': '너무 많은 시도가 있었습니다. 잠시 후 다시 시도해 주세요.',
+    'auth/network-request-failed': '네트워크 오류가 발생했습니다.'
+  };
+  return map[code] || '오류가 발생했습니다. (' + code + ')';
+}
+
+function showError(elId, msg) {
+  var el = document.getElementById(elId);
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+/* ── 회원가입 ── */
+function doSignup() {
+  var empNo = document.getElementById('signupEmpNo').value.trim();
+  var name = document.getElementById('signupName').value.trim();
+  var phone = document.getElementById('signupPhone').value.trim();
+  var email = document.getElementById('signupEmail').value.trim();
+  var pw = document.getElementById('signupPw').value;
+  var pwc = document.getElementById('signupPwConfirm').value;
+
+  if (!empNo) return showError('signupError', '사원번호를 입력해 주세요.');
+  if (!name) return showError('signupError', '이름을 입력해 주세요.');
+  if (!phone || phone.length < 10 || phone.length > 11) return showError('signupError', '핸드폰 번호를 정확히 입력해 주세요.');
+  if (!email) return showError('signupError', '이메일을 입력해 주세요.');
+  if (pw.length < 6) return showError('signupError', '비밀번호는 6자 이상이어야 합니다.');
+  if (pw !== pwc) return showError('signupError', '비밀번호가 일치하지 않습니다.');
+
+  var btn = document.getElementById('signupBtn');
+  btn.disabled = true;
+  btn.textContent = '처리 중...';
+
+  var isAdmin = ADMIN_EMAILS.indexOf(email.toLowerCase()) !== -1;
+
+  auth.createUserWithEmailAndPassword(email, pw).then(function(cred) {
+    return db.collection('users').doc(cred.user.uid).set({
+      uid: cred.user.uid,
+      email: email.toLowerCase(),
+      employeeNo: empNo,
+      displayName: name,
+      phone: phone,
+      role: isAdmin ? 'admin' : 'user',
+      status: isAdmin ? 'approved' : 'pending',
+      devices: [],
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      lastLoginAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  }).catch(function(err) {
+    showError('signupError', getAuthErrorMsg(err.code));
+    btn.disabled = false;
+    btn.textContent = '회원가입';
+  });
+}
+
+/* ── 로그인 ── */
+function doLogin() {
+  var empNo = document.getElementById('loginEmpNo').value.trim();
+  var email = document.getElementById('loginEmail').value.trim();
+  var pw = document.getElementById('loginPw').value;
+
+  if (!empNo) return showError('loginError', '사원번호를 입력해 주세요.');
+  if (!email) return showError('loginError', '이메일을 입력해 주세요.');
+  if (!pw) return showError('loginError', '비밀번호를 입력해 주세요.');
+
+  var btn = document.getElementById('loginBtn');
+  btn.disabled = true;
+  btn.textContent = '로그인 중...';
+
+  // 사원번호 저장 처리
+  var remember = document.getElementById('rememberEmpNo').checked;
+  if (remember) {
+    localStorage.setItem('saved_emp_no', empNo);
+  } else {
+    localStorage.removeItem('saved_emp_no');
+  }
+
+  auth.signInWithEmailAndPassword(email, pw).then(function() {
+    // 로그인 성공 시 사원번호 업데이트 (변경된 경우 반영)
+    var user = auth.currentUser;
+    if (user) {
+      db.collection('users').doc(user.uid).update({ employeeNo: empNo });
+    }
+  }).catch(function(err) {
+    showError('loginError', getAuthErrorMsg(err.code));
+    btn.disabled = false;
+    btn.textContent = '로그인';
+  });
+}
+
+/* ── 로그아웃 ── */
+function doLogout() {
+  sessionStorage.removeItem('adminDashboardOpen');
+  auth.signOut();
+}
+
+/* ── 기기 확인 + 등록 ── */
+function checkAndRegisterDevice(userDoc) {
+  var data = userDoc.data();
+  var fp = generateDeviceFingerprint();
+  var devices = data.devices || [];
+
+  // 이미 등록된 기기인지 확인
+  var existing = devices.find(function(d) { return d.fingerprint === fp; });
+  if (existing) {
+    // 기존 기기 — lastLogin 업데이트
+    var updated = devices.map(function(d) {
+      if (d.fingerprint === fp) d.lastLogin = new Date();
+      return d;
+    });
+    userDoc.ref.update({ devices: updated, lastLoginAt: firebase.firestore.FieldValue.serverTimestamp() });
+    return true;
+  }
+
+  // 새 기기 — 슬롯 확인
+  if (devices.length < MAX_DEVICES) {
+    devices.push({
+      fingerprint: fp,
+      label: getDeviceLabel(),
+      type: getDeviceType(),
+      lastLogin: new Date(),
+      registeredAt: new Date()
+    });
+    userDoc.ref.update({ devices: devices, lastLoginAt: firebase.firestore.FieldValue.serverTimestamp() });
+    return true;
+  }
+
+  // 기기 초과 — 교체 UI 표시
+  renderDeviceLimitScreen(devices, userDoc.ref, fp);
+  return false;
+}
+
+function renderDeviceLimitScreen(devices, userRef, newFp) {
+  var list = document.getElementById('deviceList');
+  list.innerHTML = '';
+  devices.forEach(function(d, i) {
+    var icon = d.type === 'mobile' ? 'fa-mobile-screen-button' : 'fa-desktop';
+    var date = d.registeredAt ? (d.registeredAt.toDate ? d.registeredAt.toDate() : new Date(d.registeredAt)) : new Date();
+    var div = document.createElement('div');
+    div.className = 'device-item';
+    div.innerHTML = '<i class="fas ' + icon + '"></i><div class="device-info"><div class="label">' + d.label + '</div><div class="date">등록: ' + date.toLocaleDateString('ko-KR') + '</div></div><button class="device-replace-btn" data-idx="' + i + '">교체</button>';
+    div.querySelector('.device-replace-btn').addEventListener('click', function() {
+      var idx = +this.dataset.idx;
+      devices[idx] = {
+        fingerprint: newFp,
+        label: getDeviceLabel(),
+        type: getDeviceType(),
+        lastLogin: new Date(),
+        registeredAt: new Date()
+      };
+      userRef.update({ devices: devices, lastLoginAt: firebase.firestore.FieldValue.serverTimestamp() }).then(function() {
+        showScreen('heroFrame');
+        showLandingButtons(true, ADMIN_EMAILS.indexOf(auth.currentUser.email.toLowerCase()) !== -1);
+      });
+    });
+    list.appendChild(div);
+  });
+  showScreen('deviceLimitScreen');
+  hideSplash();
+}
+
+/* ── 랜딩 버튼 표시 ── */
+function showLandingButtons(show, isAdmin) {
+  var logoutBtn = document.getElementById('logoutBtn');
+  var adminBtn = document.getElementById('adminOpenBtn');
+  if (logoutBtn) logoutBtn.style.display = show ? 'block' : 'none';
+  if (adminBtn) adminBtn.style.display = (show && isAdmin) ? 'block' : 'none';
+}
+
+/* ── 스플래시 숨기기 ── */
+function hideSplash() {
+  var splash = document.getElementById('splashScreen');
+  if (splash) {
+    splash.classList.add('hide');
+    setTimeout(function() { splash.style.display = 'none'; }, 300);
+  }
+}
+
+/* ── Auth 상태 감지 (핵심 라우터) ── */
+auth.onAuthStateChanged(function(user) {
+  if (!user) {
+    showScreen('authScreen');
+    setTimeout(hideSplash, 500);
+    // 폼 초기화
+    document.getElementById('loginBtn').disabled = false;
+    document.getElementById('loginBtn').textContent = '로그인';
+    document.getElementById('signupBtn').disabled = false;
+    document.getElementById('signupBtn').textContent = '회원가입';
+    return;
+  }
+
+  // Firestore 사용자 문서 조회
+  var userRef = db.collection('users').doc(user.uid);
+  userRef.get().then(function(doc) {
+    if (!doc.exists) {
+      // 문서 없음 (직접 Firebase에서 생성된 경우)
+      var isAdmin = ADMIN_EMAILS.indexOf(user.email.toLowerCase()) !== -1;
+      return userRef.set({
+        uid: user.uid,
+        email: user.email.toLowerCase(),
+        employeeNo: '',
+        displayName: user.displayName || user.email.split('@')[0],
+        phone: '',
+        role: isAdmin ? 'admin' : 'user',
+        status: isAdmin ? 'approved' : 'pending',
+        devices: [],
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        lastLoginAt: firebase.firestore.FieldValue.serverTimestamp()
+      }).then(function() { return userRef.get(); });
+    }
+    return doc;
+  }).then(function(doc) {
+    if (!doc) return;
+    var data = doc.data();
+
+    if (data.status === 'pending') {
+      showScreen('pendingScreen');
+      hideSplash();
+      return;
+    }
+    if (data.status === 'rejected' || data.status === 'withdrawn') {
+      showScreen('rejectedScreen');
+      hideSplash();
+      return;
+    }
+
+    // approved — 기기 확인
+    var deviceOk = checkAndRegisterDevice(doc);
+    if (deviceOk) {
+      showScreen('heroFrame');
+      var isAdmin = data.role === 'admin';
+      showLandingButtons(true, isAdmin);
+      if (isAdmin && sessionStorage.getItem('adminDashboardOpen') === 'true') {
+        openAdmin();
+      }
+      hideSplash();
+    }
+  });
+});
+
+/* ── 관리자 대시보드 ── */
+function openAdmin() {
+  var dash = document.getElementById('adminDashboard');
+  dash.style.display = 'flex';
+  sessionStorage.setItem('adminDashboardOpen', 'true');
+  loadAdminUsers();
+}
+
+function closeAdmin() {
+  document.getElementById('adminDashboard').style.display = 'none';
+  sessionStorage.removeItem('adminDashboardOpen');
+}
+
+function loadAdminUsers() {
+  db.collection('users').get().then(function(snapshot) {
+    _allUsers = [];
+    snapshot.forEach(function(doc) { _allUsers.push(doc.data()); });
+    renderAdminStats();
+    renderAdminTable(_allUsers);
+  });
+}
+
+function renderAdminStats() {
+  var total = _allUsers.length;
+  var pending = _allUsers.filter(function(u) { return u.status === 'pending'; }).length;
+  var approved = _allUsers.filter(function(u) { return u.status === 'approved'; }).length;
+  var rejected = _allUsers.filter(function(u) { return u.status === 'rejected'; }).length;
+  document.getElementById('adminStats').innerHTML =
+    '<div class="admin-stat"><div class="num">' + total + '</div><div class="lbl">전체 사용자</div></div>' +
+    '<div class="admin-stat"><div class="num" style="color:#fbbf24;">' + pending + '</div><div class="lbl">대기중</div></div>' +
+    '<div class="admin-stat"><div class="num" style="color:#34d399;">' + approved + '</div><div class="lbl">승인됨</div></div>' +
+    '<div class="admin-stat"><div class="num" style="color:#f87171;">' + rejected + '</div><div class="lbl">거부됨</div></div>';
+}
+
+function renderAdminTable(users) {
+  var tbody = document.getElementById('adminTableBody');
+  tbody.innerHTML = '';
+  if (users.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:rgba(255,255,255,0.3);padding:40px;">사용자가 없습니다</td></tr>';
+    return;
+  }
+  users.forEach(function(u) {
+    var badgeClass = u.status === 'pending' ? 'badge-pending' : u.status === 'approved' ? 'badge-approved' : u.status === 'withdrawn' ? 'badge-withdrawn' : 'badge-rejected';
+    var badgeText = u.status === 'pending' ? '대기중' : u.status === 'approved' ? '승인됨' : u.status === 'withdrawn' ? '탈퇴' : '거부됨';
+    var deviceCount = (u.devices || []).length;
+    var created = u.createdAt ? (u.createdAt.toDate ? u.createdAt.toDate().toLocaleDateString('ko-KR') : '-') : '-';
+    var lastLogin = u.lastLoginAt ? (u.lastLoginAt.toDate ? u.lastLoginAt.toDate().toLocaleDateString('ko-KR') : '-') : '-';
+    var actions = '';
+    if (u.role !== 'admin') {
+      if (u.status === 'withdrawn') {
+        actions = '<span style="color:rgba(255,255,255,0.3);font-size:11px;">탈퇴 처리됨</span>';
+      } else {
+        if (u.status !== 'approved') actions += '<button class="admin-action approve" onclick="adminApprove(\'' + u.uid + '\')">승인</button>';
+        if (u.status !== 'rejected') actions += '<button class="admin-action reject" onclick="adminReject(\'' + u.uid + '\')">거부</button>';
+        if (deviceCount > 0) actions += '<button class="admin-action" onclick="adminResetDevices(\'' + u.uid + '\')">기기초기화</button>';
+        actions += '<button class="admin-action withdraw" onclick="adminWithdraw(\'' + u.uid + '\')">탈퇴</button>';
+      }
+    } else {
+      actions = '<span style="color:rgba(255,255,255,0.3);font-size:11px;">관리자</span>';
+    }
+    var tr = document.createElement('tr');
+    tr.innerHTML = '<td>' + (u.employeeNo || '-') + '</td><td>' + (u.displayName || '-') + '</td><td>' + (u.phone || '-') + '</td><td>' + u.email + '</td><td><span class="badge ' + badgeClass + '">' + badgeText + '</span></td><td>' + deviceCount + '/' + MAX_DEVICES + '</td><td>' + created + '</td><td>' + lastLogin + '</td><td>' + actions + '</td>';
+    tbody.appendChild(tr);
+  });
+}
+
+var _adminFilterValue = 'all';
+
+function toggleCustomSelect() {
+  var opts = document.getElementById('adminFilterOptions');
+  opts.classList.toggle('open');
+}
+
+function selectFilterOption(el) {
+  _adminFilterValue = el.getAttribute('data-value');
+  var selected = document.getElementById('adminFilterSelected');
+  selected.textContent = el.textContent;
+  selected.style.color = el.style.color || '#fff';
+  var opts = document.getElementById('adminFilterOptions');
+  opts.querySelectorAll('div').forEach(function(d) { d.classList.remove('active'); });
+  el.classList.add('active');
+  opts.classList.remove('open');
+  filterAdminTable();
+}
+
+document.addEventListener('click', function(e) {
+  var wrap = document.getElementById('adminFilterWrap');
+  if (wrap && !wrap.contains(e.target)) {
+    document.getElementById('adminFilterOptions').classList.remove('open');
+  }
+});
+
+function filterAdminTable() {
+  var search = document.getElementById('adminSearchInput').value.toLowerCase();
+  var status = _adminFilterValue;
+  var filtered = _allUsers.filter(function(u) {
+    var matchSearch = !search || (u.displayName || '').toLowerCase().indexOf(search) !== -1 || u.email.toLowerCase().indexOf(search) !== -1 || (u.employeeNo || '').toLowerCase().indexOf(search) !== -1 || (u.phone || '').indexOf(search) !== -1;
+    var matchStatus = status === 'all' || u.status === status;
+    return matchSearch && matchStatus;
+  });
+  renderAdminTable(filtered);
+}
+
+function adminApprove(uid) {
+  db.collection('users').doc(uid).update({ status: 'approved' }).then(function() { loadAdminUsers(); });
+}
+
+function adminReject(uid) {
+  db.collection('users').doc(uid).update({ status: 'rejected' }).then(function() { loadAdminUsers(); });
+}
+
+function adminResetDevices(uid) {
+  if (!confirm('이 사용자의 등록 기기를 초기화하시겠습니까?')) return;
+  db.collection('users').doc(uid).update({ devices: [] }).then(function() { loadAdminUsers(); });
+}
+
+function adminWithdraw(uid) {
+  if (!confirm('이 사용자를 탈퇴 처리하시겠습니까?\n탈퇴 후 해당 사용자는 시스템에 접근할 수 없습니다.')) return;
+  db.collection('users').doc(uid).update({
+    status: 'withdrawn',
+    devices: [],
+    withdrawnAt: firebase.firestore.FieldValue.serverTimestamp()
+  }).then(function() { loadAdminUsers(); });
+}
+
+/* ── Enter 키 로그인/가입 ── */
+document.addEventListener('keydown', function(e) {
+  if (e.key !== 'Enter') return;
+  var authScreen = document.getElementById('authScreen');
+  if (authScreen.style.display === 'none') return;
+  var loginForm = document.getElementById('loginForm');
+  if (loginForm.style.display !== 'none') doLogin();
+  else doSignup();
+});
+
+/* ── 사원번호 자동 채움 ── */
+(function() {
+  var saved = localStorage.getItem('saved_emp_no');
+  if (saved) {
+    document.getElementById('loginEmpNo').value = saved;
+    document.getElementById('rememberEmpNo').checked = true;
+  }
+})();
+</script>
+
+<!-- Three.js CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  /* ═══════════════════════════════════════
+     Aurora WebGL 셰이더 배경
+     ═══════════════════════════════════════ */
+  var canvas = document.getElementById('auroraCanvas');
+  var frame = document.getElementById('heroFrame');
+  if(canvas && window.THREE){
+    var renderer = new THREE.WebGLRenderer({canvas:canvas, alpha:true, antialias:false});
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+
+    var scene = new THREE.Scene();
+    var camera = new THREE.OrthographicCamera(-1,1,1,-1,0,1);
+
+    var vertexShader = 'void main(){gl_Position=vec4(position,1.0);}';
+    var fragmentShader = [
+      'precision mediump float;',
+      'uniform float u_time;',
+      'uniform vec2 u_resolution;',
+
+      'float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}',
+
+      'float noise(vec2 p){',
+      '  vec2 i=floor(p),f=fract(p);',
+      '  f=f*f*(3.0-2.0*f);',
+      '  return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),f.x),f.y);',
+      '}',
+
+      'float fbm(vec2 p){',
+      '  float v=0.0,a=0.5;',
+      '  mat2 rot=mat2(cos(0.5),sin(0.5),-sin(0.5),cos(0.5));',
+      '  for(int i=0;i<5;i++){v+=a*noise(p);p=rot*p*2.0;a*=0.5;}',
+      '  return v;',
+      '}',
+
+      'void main(){',
+      '  vec2 uv=gl_FragCoord.xy/u_resolution;',
+      '  float t=u_time*0.12;',
+
+      '  // 오로라 웨이브',
+      '  float wave1=fbm(vec2(uv.x*3.0+t,uv.y*1.5+t*0.3));',
+      '  float wave2=fbm(vec2(uv.x*2.0-t*0.7,uv.y*2.0+t*0.5));',
+      '  float wave3=fbm(vec2(uv.x*4.0+t*0.4,uv.y*1.0-t*0.2));',
+
+      '  // 오로라 형태 (상단 집중)',
+      '  float aurora=smoothstep(0.3,0.7,wave1)*smoothstep(0.0,0.5,1.0-uv.y);',
+      '  float aurora2=smoothstep(0.35,0.75,wave2)*smoothstep(0.1,0.6,1.0-uv.y);',
+      '  float aurora3=smoothstep(0.4,0.8,wave3)*smoothstep(0.0,0.4,1.0-uv.y);',
+
+      '  // 블루 계열 (#27398C) 색상',
+      '  vec3 col1=vec3(0.09,0.15,0.45);',   // 딥 네이비
+      '  vec3 col2=vec3(0.15,0.25,0.65);',   // 인디고
+      '  vec3 col3=vec3(0.22,0.38,0.85);',   // 밝은 블루
+      '  vec3 col4=vec3(0.35,0.55,1.0);',    // 스카이 하이라이트
+      '  vec3 col5=vec3(0.12,0.10,0.35);',   // 퍼플 틴트
+
+      '  vec3 color=vec3(0.02,0.02,0.06);',  // 베이스 (거의 검정)
+      '  color+=col1*aurora*0.6;',
+      '  color+=col2*aurora2*0.4;',
+      '  color+=col3*aurora3*0.3;',
+      '  color+=col4*pow(aurora,3.0)*0.5;',
+      '  color+=col5*aurora2*aurora*0.2;',
+
+      '  // 비네트',
+      '  float vig=1.0-length((uv-0.5)*1.4);',
+      '  color*=smoothstep(0.0,0.7,vig);',
+
+      '  gl_FragColor=vec4(color,1.0);',
+      '}'
+    ].join('\n');
+
+    var geo = new THREE.PlaneGeometry(2,2);
+    var mat = new THREE.ShaderMaterial({
+      uniforms:{u_time:{value:0},u_resolution:{value:new THREE.Vector2()}},
+      vertexShader:vertexShader,
+      fragmentShader:fragmentShader
+    });
+    scene.add(new THREE.Mesh(geo,mat));
+
+    function resize(){
+      var w=canvas.clientWidth, h=canvas.clientHeight;
+      renderer.setSize(w,h,false);
+      mat.uniforms.u_resolution.value.set(w*renderer.getPixelRatio(),h*renderer.getPixelRatio());
+    }
+    resize();
+    window.addEventListener('resize',resize);
+
+    (function animate(ts){
+      requestAnimationFrame(animate);
+      mat.uniforms.u_time.value=ts*0.001;
+      renderer.render(scene,camera);
+    })(0);
+  }
+
+  /* ═══════════════════════════════════════
+     마우스 내부 글로우
+     ═══════════════════════════════════════ */
+  var glow=document.getElementById('mouseGlow');
+  if(frame&&glow){
+    frame.addEventListener('mousemove',function(e){
+      var r=frame.getBoundingClientRect();
+      glow.style.background='radial-gradient(circle 350px at '+(e.clientX-r.left)+'px '+(e.clientY-r.top)+'px,rgba(40,80,220,0.1),transparent 70%)';
+    });
+  }
+
+  /* ═══════════════════════════════════════
+     글로잉 보더 — 마우스 추적 광선
+     ═══════════════════════════════════════ */
+  var targets=document.querySelectorAll('.glow-target');
+  var PROXIMITY=80;
+  var angles=new Array(targets.length).fill(0);
+
+  document.addEventListener('pointermove',function(e){
+    var mx=e.clientX,my=e.clientY;
+    targets.forEach(function(el,i){
+      var r=el.getBoundingClientRect();
+      var cx=r.left+r.width*0.5, cy=r.top+r.height*0.5;
+      var isNear=mx>r.left-PROXIMITY&&mx<r.right+PROXIMITY&&my>r.top-PROXIMITY&&my<r.bottom+PROXIMITY;
+      el.style.setProperty('--glow-active',isNear?'1':'0');
+      if(!isNear)return;
+      var target=Math.atan2(my-cy,mx-cx)*180/Math.PI+90;
+      var cur=angles[i];
+      var diff=((target-cur+180)%360)-180;
+      angles[i]=cur+diff;
+      el.style.setProperty('--glow-start',angles[i]);
+    });
+  },{passive:true});
+
+  window.addEventListener('scroll',function(){
+    targets.forEach(function(el){el.style.setProperty('--glow-active','0');});
+  },{passive:true});
+
+  /* ═══════════════════════════════════════
+     캐러셀 무한 루프 슬라이드
+     ═══════════════════════════════════════ */
+  var track=document.getElementById('carouselTrack');
+  var origCards=track?Array.from(track.querySelectorAll('.tool-card')):[];
+  var REAL_COUNT=origCards.length;
+  var prevBtn=document.getElementById('carouselPrev');
+  var nextBtn=document.getElementById('carouselNext');
+  var dotsContainer=document.getElementById('carouselDots');
+  var currentSlide=0;
+  var isTransitioning=false;
+
+  /* 카드 클론 (무한 루프용) */
+  origCards.forEach(function(card){
+    var clone=card.cloneNode(true);
+    track.appendChild(clone);
+  });
+
+  /* 글로잉 보더 타겟 재초기화 (클론 포함) */
+  targets=document.querySelectorAll('.glow-target');
+  angles=new Array(targets.length).fill(0);
+
+  function getVisibleCount(){
+    if(window.innerWidth<=640) return 1;
+    if(window.innerWidth<=1000) return 2;
+    return 3;
+  }
+
+  function getCardWidth(){
+    var firstCard=track.querySelector('.tool-card');
+    return firstCard?firstCard.getBoundingClientRect().width+18:0;
+  }
+
+  function buildDots(){
+    if(!dotsContainer)return;
+    dotsContainer.innerHTML='';
+    for(var i=0;i<REAL_COUNT;i++){
+      var dot=document.createElement('div');
+      dot.className='carousel-dot'+(i===currentSlide%REAL_COUNT?' active':'');
+      dot.dataset.idx=i;
+      dot.addEventListener('click',function(){
+        var target=+this.dataset.idx;
+        slideTo(target);
+      });
+      dotsContainer.appendChild(dot);
+    }
+  }
+
+  function updateDots(){
+    if(!dotsContainer)return;
+    var active=((currentSlide%REAL_COUNT)+REAL_COUNT)%REAL_COUNT;
+    dotsContainer.querySelectorAll('.carousel-dot').forEach(function(d,i){
+      d.className='carousel-dot'+(i===active?' active':'');
+    });
+  }
+
+  function slideTo(idx,instant){
+    currentSlide=idx;
+    var cardW=getCardWidth();
+    if(instant){
+      track.style.transition='none';
+      track.style.transform='translateX(-'+currentSlide*cardW+'px)';
+      track.offsetHeight;
+      track.style.transition='';
+    }else{
+      isTransitioning=true;
+      track.style.transform='translateX(-'+currentSlide*cardW+'px)';
+    }
+    updateDots();
+  }
+
+  /* 트랜지션 끝나면 위치 보정 */
+  track.addEventListener('transitionend',function(){
+    isTransitioning=false;
+    if(currentSlide>=REAL_COUNT){
+      slideTo(currentSlide-REAL_COUNT,true);
+    }
+  });
+
+  function goNext(){
+    if(isTransitioning)return;
+    slideTo(currentSlide+1);
+  }
+
+  function goPrev(){
+    if(isTransitioning)return;
+    if(currentSlide<=0){
+      slideTo(REAL_COUNT,true);
+      requestAnimationFrame(function(){slideTo(REAL_COUNT-1);});
+    }else{
+      slideTo(currentSlide-1);
+    }
+  }
+
+  if(prevBtn) prevBtn.addEventListener('click',goPrev);
+  if(nextBtn) nextBtn.addEventListener('click',goNext);
+
+  buildDots();
+  window.addEventListener('resize',function(){
+    slideTo(currentSlide%REAL_COUNT,true);
+    buildDots();
+  });
+})();
+
+/* ═══════════════════════════════════════
+   Service Worker 등록
+   ═══════════════════════════════════════ */
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(function(){});
+}
+</script>
+</body>
+</html>

@@ -1,4 +1,4 @@
-var CACHE_NAME = 'pro-ai-v4';
+var CACHE_NAME = 'pro-ai-v5';
 var urlsToCache = [
   '/',
   '/index.html',
@@ -30,8 +30,13 @@ self.addEventListener('fetch', function(event) {
     return;
   }
   event.respondWith(
-    caches.match(event.request).then(function(response) {
-      return response || fetch(event.request);
+    fetch(event.request).then(function(response) {
+      return caches.open(CACHE_NAME).then(function(cache) {
+        cache.put(event.request, response.clone());
+        return response;
+      });
+    }).catch(function() {
+      return caches.match(event.request);
     })
   );
 });

@@ -28,7 +28,7 @@ body{font-family:'Pretendard',sans-serif;background:#000;color:#e2e8f0;overflow:
 .glow-border{position:absolute;inset:calc(-1 * var(--glow-border));border-radius:inherit;border:var(--glow-border) solid transparent;pointer-events:none;z-index:10;background:radial-gradient(circle,#6090ff 10%,transparent 20%),radial-gradient(circle at 40% 40%,#27398C 5%,transparent 15%),radial-gradient(circle at 60% 60%,#3b82f6 10%,transparent 20%),repeating-conic-gradient(from calc((var(--glow-start) - var(--glow-spread))*1deg) at 50% 50%,#6090ff 0%,#27398C calc(25% / 5),#3b82f6 calc(50% / 5),#a8c4ff calc(75% / 5),#6090ff calc(100% / 5));background-attachment:fixed;-webkit-mask-image:linear-gradient(#0000,#0000),conic-gradient(from calc((var(--glow-start) - var(--glow-spread))*1deg),transparent 0deg,#fff,transparent calc(var(--glow-spread)*2deg));-webkit-mask-clip:padding-box,border-box;-webkit-mask-composite:source-in;mask-image:linear-gradient(#0000,#0000),conic-gradient(from calc((var(--glow-start) - var(--glow-spread))*1deg),transparent 0deg,#fff,transparent calc(var(--glow-spread)*2deg));mask-clip:padding-box,border-box;mask-composite:intersect;opacity:var(--glow-active);transition:opacity 0.3s;}
 
 /* ── 히어로 프레임 ── */
-.hero-frame{position:relative;width:calc(100% - 48px);max-width:1260px;height:calc(100vh - 48px);max-height:860px;border-radius:24px;border:1px solid rgba(255,255,255,0.1);background:#050510;overflow:visible;display:flex;flex-direction:column;box-shadow:0 0 0 1px rgba(255,255,255,0.05),0 0 80px rgba(39,57,140,0.08);}
+.hero-frame{position:relative;width:calc(100% - 48px);max-width:1260px;height:calc(100vh - 48px);max-height:860px;border-radius:24px;border:1px solid rgba(255,255,255,0.1);background-color:#050310;background-image:radial-gradient(85% 70% at 50% -10%,rgb(180,176,254) 0%,rgb(54,50,133) 22.92%,rgb(17,13,91) 42.71%,rgb(5,3,39) 88.54%);overflow:visible;display:flex;flex-direction:column;box-shadow:0 0 0 1px rgba(255,255,255,0.05),0 0 80px rgba(39,57,140,0.08);}
 .hero-frame>.dot-grid,.hero-frame>.mouse-glow,.hero-frame>.content{overflow:hidden;border-radius:inherit;}
 
 /* ── Aurora 캔버스 ── */
@@ -327,8 +327,8 @@ body{font-family:'Pretendard',sans-serif;background:#000;color:#e2e8f0;overflow:
     <!-- 히어로 (플로팅) -->
     <div class="hero-content">
       <div class="hero-badge fade-up" style="animation-delay:0.3s;"><span class="bi">✦</span>AI-Powered Pro Sales Tools</div>
-      <h1 class="hero-title fade-up" style="animation-delay:0.5s;"><span class="t1">보험 영업의 모든 것,</span><br><span class="t2">하나의 플랫폼에서</span></h1>
-      <p class="hero-sub fade-up" style="animation-delay:0.7s;">보장 분석부터 DB 영업관리, 통합 금융 계산기, 전문 비서 챗봇까지.<br>프로사업단을 위한 6가지 핵심 AI 시스템</p>
+      <h1 class="hero-title fade-up" style="animation-delay:0.5s;"><span class="t1">프로 사업단을 위한</span><br><span class="t2">6대 핵심 AI 시스템</span></h1>
+      <p class="hero-sub fade-up" style="animation-delay:0.7s;">보장 분석부터 DB 영업관리, 통합 금융 계산기, 전문 비서 챗봇까지.</p>
     </div>
 
     <!-- 캐러셀 카드 -->

@@ -618,6 +618,7 @@ function doLogin() {
 
 /* ── 로그아웃 ── */
 function doLogout() {
+  if (!confirm('로그아웃 하시겠습니까?')) return;
   sessionStorage.removeItem('adminDashboardOpen');
   auth.signOut();
 }

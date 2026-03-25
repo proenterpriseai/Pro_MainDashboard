@@ -24,8 +24,11 @@
 | 보장분석 | `https://pro-insuranceanalysis.com` |
 | DB영업관리 | `https://pro-salessystem.com` |
 | 통합금융계산기 | `https://pro-financecalculator.vercel.app` |
-| Gemini GEMS | `https://gemini.google.com/gem/*` |
-| AI 활용 헬프 데스크 | `https://gemini.google.com/gem/938bb95ddc70` |
+| 건강검진 AI 전문가 | `https://gemini.google.com/gem/1fAoSklWuFuuvrnNkojfuo7t-ltPL00VX?usp=sharing` |
+| AI 활용 헬프 데스크 | `https://gemini.google.com/gem/1ujGMGS3M6CdPOxkFOiWdwplpgAduUXOy?usp=sharing` |
+| 예상 보험금 산출 전문가 | `https://gemini.google.com/gem/15CfHW2qR7KKsa2KvSoJutvykQ3Rr_RjT?usp=sharing` |
+| 민원 분쟁조정 전문가 | `https://gemini.google.com/gem/1jcmQ743PuN10BT_N88nAuPnESu4mWH_D?usp=sharing` |
+| 금융 & 보험 코치 | `https://gemini.google.com/gem/1vUjZNt7m7jLAxJ3ICOv5tI4WIqssmX0H?usp=sharing` |
 
 ## ⚠️ 도메인 규칙
 - 보장분석/DB영업관리: 반드시 `.com` 도메인 사용 (`.vercel.app` 금지)
@@ -58,3 +61,4 @@
 ## 배포 순서 (반드시 준수)
 1. `.com` (pro-dashboards.com) 먼저 → git push → 배포 확인
 2. 코드 수정 시 반드시 push/배포까지 완료
+- **커밋 시**: Co-Authored-By 태그 필수

@@ -202,10 +202,12 @@ body{font-family:'Pretendard',sans-serif;background:#000;color:#e2e8f0;overflow:
 
 /* ── 로고바 Auth 버튼 ── */
 .logo-bar{display:flex;align-items:center;justify-content:space-between;}
-.logo-actions{display:flex;gap:8px;}
+.logo-actions{display:flex;flex-direction:column;align-items:flex-end;gap:6px;}
+.logo-actions-row{display:flex;gap:8px;}
 .logo-action-btn{padding:6px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.6);font-size:12px;font-family:inherit;cursor:pointer;transition:all 0.3s;display:none;}
 .logo-action-btn:hover{background:rgba(255,255,255,0.08);color:#fff;}
 .logo-action-btn.admin-btn{border-color:rgba(96,144,255,0.3);color:#6090ff;}
+.logo-action-btn.helpdesk-btn{border-color:rgba(34,197,94,0.3);color:#22c55e;}
 
 /* ── 반응형 ── */
 @media(max-width:1000px){
@@ -333,8 +335,11 @@ body{font-family:'Pretendard',sans-serif;background:#000;color:#e2e8f0;overflow:
     <div class="logo-bar fade-up" style="animation-delay:0.1s;">
       <img src="logo.png" alt="Pro Enterprise AI">
       <div class="logo-actions">
-        <button class="logo-action-btn admin-btn" id="adminOpenBtn" onclick="openAdmin()"><i class="fas fa-shield-halved"></i>&nbsp; 관리자</button>
-        <button class="logo-action-btn" id="logoutBtn" onclick="doLogout()"><i class="fas fa-right-from-bracket"></i>&nbsp; 로그아웃</button>
+        <div class="logo-actions-row">
+          <button class="logo-action-btn admin-btn" id="adminOpenBtn" onclick="openAdmin()"><i class="fas fa-shield-halved"></i>&nbsp; 관리자</button>
+          <button class="logo-action-btn" id="logoutBtn" onclick="doLogout()"><i class="fas fa-right-from-bracket"></i>&nbsp; 로그아웃</button>
+        </div>
+        <button class="logo-action-btn helpdesk-btn" id="helpdeskBtn" onclick="window.open('https://gemini.google.com/gem/938bb95ddc70','_blank')"><i class="fas fa-headset"></i>&nbsp; AI 활용 헬프 데스크</button>
       </div>
     </div>
 
@@ -537,7 +542,9 @@ function showScreen(screenId) {
   });
   var logoutBtn = document.getElementById('logoutBtn');
   var adminBtn = document.getElementById('adminOpenBtn');
+  var helpdeskBtn = document.getElementById('helpdeskBtn');
   if (logoutBtn) logoutBtn.style.display = (screenId === 'heroFrame') ? 'block' : 'none';
+  if (helpdeskBtn) helpdeskBtn.style.display = (screenId === 'heroFrame') ? 'block' : 'none';
   if (adminBtn) adminBtn.style.display = 'none';
 }
 
@@ -729,7 +736,9 @@ function renderDeviceLimitScreen(devices, userRef, newFp) {
 function showLandingButtons(show, isAdmin) {
   var logoutBtn = document.getElementById('logoutBtn');
   var adminBtn = document.getElementById('adminOpenBtn');
+  var helpdeskBtn = document.getElementById('helpdeskBtn');
   if (logoutBtn) logoutBtn.style.display = show ? 'block' : 'none';
+  if (helpdeskBtn) helpdeskBtn.style.display = show ? 'block' : 'none';
   if (adminBtn) adminBtn.style.display = (show && isAdmin) ? 'block' : 'none';
 }
 

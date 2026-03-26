@@ -17,6 +17,7 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
 <style>
@@ -505,6 +506,12 @@ var ADMIN_EMAILS = ['proenterpriseai@incarproent.com', 'proenterprise@incarproen
 var MAX_DEVICES = 2;
 var DEVICE_FP_KEY = 'pro_device_fp';
 
+// ── EmailJS 승인 알림 설정 (값 입력 후 활성화됨) ──
+var EMAILJS_PUBLIC_KEY   = 'YOUR_PUBLIC_KEY';   // EmailJS → Account → API Keys
+var EMAILJS_SERVICE_ID   = 'YOUR_SERVICE_ID';   // EmailJS → Email Services → Service ID
+var EMAILJS_TMPL_APPROVE = 'YOUR_TEMPLATE_ID';  // EmailJS → Email Templates → 승인 Template ID
+var EMAILJS_TMPL_REJECT  = 'YOUR_TEMPLATE_ID';  // EmailJS → Email Templates → 거부 Template ID
+
 firebase.initializeApp({
   apiKey: "AIzaSyCuc3x0mF6yfdvVvGrs4J2-rJBo2qB8_sk",
   authDomain: "pro-enterprise-ai.firebaseapp.com",
@@ -924,12 +931,32 @@ function filterAdminTable() {
   renderAdminTable(filtered);
 }
 
+function sendApprovalEmail(uid, isApproved) {
+  if (!EMAILJS_PUBLIC_KEY || EMAILJS_PUBLIC_KEY === 'YOUR_PUBLIC_KEY') return;
+  db.collection('users').doc(uid).get().then(function(doc) {
+    if (!doc.exists) return;
+    var u = doc.data();
+    emailjs.send(
+      EMAILJS_SERVICE_ID,
+      isApproved ? EMAILJS_TMPL_APPROVE : EMAILJS_TMPL_REJECT,
+      { to_name: u.displayName || u.email, to_email: u.email },
+      EMAILJS_PUBLIC_KEY
+    ).catch(function(err) { console.warn('이메일 발송 실패:', err); });
+  });
+}
+
 function adminApprove(uid) {
-  db.collection('users').doc(uid).update({ status: 'approved' }).then(function() { loadAdminUsers(); });
+  db.collection('users').doc(uid).update({ status: 'approved' }).then(function() {
+    sendApprovalEmail(uid, true);
+    loadAdminUsers();
+  });
 }
 
 function adminReject(uid) {
-  db.collection('users').doc(uid).update({ status: 'rejected' }).then(function() { loadAdminUsers(); });
+  db.collection('users').doc(uid).update({ status: 'rejected' }).then(function() {
+    sendApprovalEmail(uid, false);
+    loadAdminUsers();
+  });
 }
 
 function adminResetDevices(uid) {

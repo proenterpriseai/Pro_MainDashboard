@@ -803,6 +803,13 @@ auth.onAuthStateChanged(function(user) {
     if (!doc) return;
     var data = doc.data();
 
+    // ADMIN_EMAILS에 있는데 role이 'user'면 자동 동기화
+    var shouldBeAdmin = ADMIN_EMAILS.indexOf(user.email.toLowerCase()) !== -1;
+    if (shouldBeAdmin && data.role !== 'admin') {
+      userRef.update({ role: 'admin' });
+      data.role = 'admin';
+    }
+
     if (data.status === 'pending') {
       showScreen('pendingScreen');
       hideSplash();

@@ -511,6 +511,7 @@ var EMAILJS_PUBLIC_KEY   = 'q3VOggr5nF6_6z3-i';
 var EMAILJS_SERVICE_ID   = 'service_81q93nk';
 var EMAILJS_TMPL_APPROVE = 'template_8jnavhd';
 var EMAILJS_TMPL_REJECT  = 'template_uiwi3xq';
+var EMAILJS_TMPL_SIGNUP  = 'template_xgkc5s4';
 
 firebase.initializeApp({
   apiKey: "AIzaSyCuc3x0mF6yfdvVvGrs4J2-rJBo2qB8_sk",
@@ -627,6 +628,8 @@ function doSignup() {
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
       lastLoginAt: firebase.firestore.FieldValue.serverTimestamp()
     });
+  }).then(function() {
+    if (!isAdmin) sendAdminSignupAlert(name, empNo, email, phone);
   }).catch(function(err) {
     showError('signupError', getAuthErrorMsg(err.code));
     btn.disabled = false;
@@ -936,6 +939,16 @@ function filterAdminTable() {
     return matchSearch && matchStatus;
   });
   renderAdminTable(filtered);
+}
+
+function sendAdminSignupAlert(name, empNo, email, phone) {
+  if (!EMAILJS_PUBLIC_KEY || EMAILJS_PUBLIC_KEY === 'YOUR_PUBLIC_KEY') return;
+  emailjs.send(
+    EMAILJS_SERVICE_ID,
+    EMAILJS_TMPL_SIGNUP,
+    { user_name: name, user_empno: empNo, user_email: email, user_phone: phone },
+    EMAILJS_PUBLIC_KEY
+  ).catch(function(err) { console.warn('관리자 알림 발송 실패:', err); });
 }
 
 function sendApprovalEmail(uid, isApproved) {

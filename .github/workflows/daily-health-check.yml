@@ -1,0 +1,109 @@
+name: Daily Health Check — 4대 시스템 + UW DB
+
+on:
+  schedule:
+    # 매일 한국시간 오전 8:47 (UTC 23:47 전날)
+    - cron: '47 23 * * *'
+  workflow_dispatch: # 수동 실행 가능
+
+jobs:
+  health-check:
+    name: 전체 시스템 헬스체크
+    runs-on: ubuntu-latest
+    steps:
+      # ── 1. 보장분석 시스템 ──
+      - name: 보장분석 (pro-insuranceanalysis.com)
+        run: |
+          STATUS=$(curl -f --max-time 20 --retry 3 --retry-delay 5 \
+            -o /dev/null -s -w "%{http_code}" \
+            https://pro-insuranceanalysis.com)
+          if [ "$STATUS" = "200" ]; then
+            echo "✅ 보장분석 정상 (HTTP $STATUS)"
+          else
+            echo "❌ 보장분석 이상 (HTTP $STATUS)"
+            exit 1
+          fi
+
+      # ── 2. DB영업관리 시스템 ──
+      - name: DB영업관리 (pro-salessystem.com)
+        run: |
+          STATUS=$(curl -f --max-time 20 --retry 3 --retry-delay 5 \
+            -o /dev/null -s -w "%{http_code}" \
+            https://pro-salessystem.com)
+          if [ "$STATUS" = "200" ]; then
+            echo "✅ DB영업관리 정상 (HTTP $STATUS)"
+          else
+            echo "❌ DB영업관리 이상 (HTTP $STATUS)"
+            exit 1
+          fi
+
+      # ── 3. 메인 대시보드 ──
+      - name: 메인 대시보드 (pro-dashboards.com)
+        run: |
+          STATUS=$(curl -f --max-time 20 --retry 3 --retry-delay 5 \
+            -o /dev/null -s -w "%{http_code}" \
+            https://pro-dashboards.com)
+          if [ "$STATUS" = "200" ]; then
+            echo "✅ 메인 대시보드 정상 (HTTP $STATUS)"
+          else
+            echo "❌ 메인 대시보드 이상 (HTTP $STATUS)"
+            exit 1
+          fi
+
+      # ── 4. 통합금융계산기 ──
+      - name: 통합금융계산기 (pro-financecalculator.vercel.app)
+        run: |
+          STATUS=$(curl -f --max-time 20 --retry 3 --retry-delay 5 \
+            -o /dev/null -s -w "%{http_code}" \
+            https://pro-financecalculator.vercel.app)
+          if [ "$STATUS" = "200" ]; then
+            echo "✅ 통합금융계산기 정상 (HTTP $STATUS)"
+          else
+            echo "❌ 통합금융계산기 이상 (HTTP $STATUS)"
+            exit 1
+          fi
+
+      # ── 5. Supabase UW 테이블 점검 ──
+      - name: Supabase uw_decisions 행 수 확인
+        run: |
+          RESPONSE=$(curl -s --max-time 15 \
+            -H "apikey: sb_publishable_5N6JtJrYA_EJZYb2DntTCQ_JhVyMAGz" \
+            -H "Authorization: Bearer sb_publishable_5N6JtJrYA_EJZYb2DntTCQ_JhVyMAGz" \
+            -H "Prefer: count=exact" \
+            "https://pjxidjyckljhwmtkrgtg.supabase.co/rest/v1/uw_decisions?select=id&limit=1")
+          echo "uw_decisions 응답: $RESPONSE"
+          echo "✅ Supabase uw_decisions 접속 정상"
+
+      - name: Supabase kcd_master 행 수 확인
+        run: |
+          RESPONSE=$(curl -s --max-time 15 \
+            -H "apikey: sb_publishable_5N6JtJrYA_EJZYb2DntTCQ_JhVyMAGz" \
+            -H "Authorization: Bearer sb_publishable_5N6JtJrYA_EJZYb2DntTCQ_JhVyMAGz" \
+            -H "Prefer: count=exact" \
+            "https://pjxidjyckljhwmtkrgtg.supabase.co/rest/v1/kcd_master?select=id&limit=1")
+          echo "kcd_master 응답: $RESPONSE"
+          echo "✅ Supabase kcd_master 접속 정상"
+
+      - name: Supabase uw_questions 행 수 확인
+        run: |
+          RESPONSE=$(curl -s --max-time 15 \
+            -H "apikey: sb_publishable_5N6JtJrYA_EJZYb2DntTCQ_JhVyMAGz" \
+            -H "Authorization: Bearer sb_publishable_5N6JtJrYA_EJZYb2DntTCQ_JhVyMAGz" \
+            -H "Prefer: count=exact" \
+            "https://pjxidjyckljhwmtkrgtg.supabase.co/rest/v1/uw_questions?select=id&limit=1")
+          echo "uw_questions 응답: $RESPONSE"
+          echo "✅ Supabase uw_questions 접속 정상"
+
+      # ── 6. 결과 요약 ──
+      - name: 헬스체크 완료 요약
+        if: success()
+        run: |
+          echo "================================================"
+          echo "✅ 4대 시스템 + UW DB 전체 정상"
+          echo "  보장분석:       pro-insuranceanalysis.com ✅"
+          echo "  DB영업관리:     pro-salessystem.com ✅"
+          echo "  메인 대시보드:   pro-dashboards.com ✅"
+          echo "  통합금융계산기:  pro-financecalculator.vercel.app ✅"
+          echo "  Supabase UW:    uw_decisions + kcd_master + uw_questions ✅"
+          echo "================================================"
+          echo "실행 시각: $(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M KST')"

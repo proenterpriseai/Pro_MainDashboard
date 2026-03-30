@@ -1,0 +1,15 @@
+{
+  "name": "pro-main-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Pro Enterprise AI Main Dashboard - Verification Loop",
+  "scripts": {
+    "lint": "eslint --no-fix --max-warnings 0 .",
+    "test": "node --test tests/unit-tests.js",
+    "verify": "npm run lint && npm run test"
+  },
+  "devDependencies": {
+    "eslint": "^9.0.0",
+    "eslint-plugin-html": "^8.0.0"
+  }
+}

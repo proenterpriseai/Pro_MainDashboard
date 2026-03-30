@@ -542,7 +542,7 @@ function getDeviceLabel() {
   var ua = navigator.userAgent;
   var isMobile = /Mobile|Android|iPhone|iPad/i.test(ua);
   var browser = /Edg/.test(ua) ? 'Edge' : /Chrome/.test(ua) ? 'Chrome' : /Safari/.test(ua) ? 'Safari' : /Firefox/.test(ua) ? 'Firefox' : 'Browser';
-  var os = /Windows/.test(ua) ? 'Windows' : /Mac/.test(ua) ? 'Mac' : /Android/.test(ua) ? 'Android' : /iPhone|iPad/.test(ua) ? 'iOS' : 'Other';
+  var os = /Windows/.test(ua) ? 'Windows' : /iPhone|iPad/.test(ua) ? 'iOS' : /Android/.test(ua) ? 'Android' : /Mac/.test(ua) ? 'Mac' : 'Other';
   return browser + ' / ' + os + (isMobile ? ' (모바일)' : ' (PC)');
 }
 

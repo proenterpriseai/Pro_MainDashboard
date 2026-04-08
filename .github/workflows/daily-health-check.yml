@@ -1,4 +1,4 @@
-name: Daily Health Check — 4대 시스템 + UW DB
+name: Daily Health Check — 5대 시스템 + UW DB
 
 on:
   schedule:
@@ -63,7 +63,20 @@ jobs:
             exit 1
           fi
 
-      # ── 5. Supabase UW 테이블 점검 ──
+      # ── 5. AI Branch 랜딩 페이지 ──
+      - name: AI Branch (ai-branch.vercel.app)
+        run: |
+          STATUS=$(curl -f --max-time 20 --retry 3 --retry-delay 5 \
+            -o /dev/null -s -w "%{http_code}" \
+            https://ai-branch.vercel.app)
+          if [ "$STATUS" = "200" ]; then
+            echo "✅ AI Branch 정상 (HTTP $STATUS)"
+          else
+            echo "❌ AI Branch 이상 (HTTP $STATUS)"
+            exit 1
+          fi
+
+      # ── 6. Supabase UW 테이블 점검 ──
       - name: Supabase uw_decisions 행 수 확인
         run: |
           RESPONSE=$(curl -s --max-time 15 \
@@ -94,16 +107,17 @@ jobs:
           echo "uw_questions 응답: $RESPONSE"
           echo "✅ Supabase uw_questions 접속 정상"
 
-      # ── 6. 결과 요약 ──
+      # ── 7. 결과 요약 ──
       - name: 헬스체크 완료 요약
         if: success()
         run: |
           echo "================================================"
-          echo "✅ 4대 시스템 + UW DB 전체 정상"
+          echo "✅ 5대 시스템 + UW DB 전체 정상"
           echo "  보장분석:       pro-insuranceanalysis.com ✅"
           echo "  DB영업관리:     pro-salessystem.com ✅"
           echo "  메인 대시보드:   pro-dashboards.com ✅"
           echo "  통합금융계산기:  pro-financecalculator.vercel.app ✅"
+          echo "  AI Branch:      ai-branch.vercel.app ✅"
           echo "  Supabase UW:    uw_decisions + kcd_master + uw_questions ✅"
           echo "================================================"
           echo "실행 시각: $(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M KST')"

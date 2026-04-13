@@ -150,6 +150,41 @@ body{font-family:'Pretendard',sans-serif;background:#000;color:#e2e8f0;overflow:
 .auth-divider{display:flex;align-items:center;gap:12px;margin:18px 0;font-size:12px;color:rgba(255,255,255,0.25);}
 .auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:rgba(255,255,255,0.08);}
 
+/* ── 비밀번호 변경/분실 링크 & 모달 ── */
+.auth-sublinks{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:12px;font-size:12px;}
+.auth-sublinks a{color:rgba(255,255,255,0.55);cursor:pointer;font-weight:500;text-decoration:none;transition:color 0.2s;display:inline-flex;align-items:center;gap:5px;}
+.auth-sublinks a:hover{color:#6090ff;text-decoration:underline;}
+.auth-sublinks a i{font-size:11px;}
+.auth-sublinks-sep{color:rgba(255,255,255,0.2);font-size:11px;}
+.pw-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.65);backdrop-filter:blur(6px);z-index:9100;display:none;align-items:center;justify-content:center;animation:modalFadeIn 0.2s ease;}
+.pw-modal-overlay.show{display:flex;}
+.pw-modal{width:100%;max-width:400px;padding:34px 30px 26px;border-radius:20px;background:rgba(15,15,30,0.96);border:1px solid rgba(255,255,255,0.1);backdrop-filter:blur(20px);box-shadow:0 0 60px rgba(39,57,140,0.25);text-align:left;animation:modalSlideUp 0.25s ease;}
+.pw-modal-icon{width:58px;height:58px;border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px;}
+.pw-modal.change .pw-modal-icon{background:rgba(96,144,255,0.15);color:#8b93ff;box-shadow:0 6px 20px rgba(99,102,241,0.25);}
+.pw-modal.reset .pw-modal-icon{background:rgba(239,68,68,0.15);color:#f87171;box-shadow:0 6px 20px rgba(239,68,68,0.25);}
+.pw-modal-title{font-size:18px;font-weight:700;color:#fff;margin-bottom:6px;text-align:center;}
+.pw-modal-subtitle{font-size:13px;color:rgba(255,255,255,0.5);text-align:center;margin-bottom:22px;}
+.pw-modal-subtitle b{color:#8b93ff;font-weight:700;margin-left:4px;}
+.pw-modal-desc{font-size:13px;color:rgba(255,255,255,0.55);text-align:center;margin-bottom:20px;line-height:1.55;}
+.pw-modal-desc b{color:#fbbf24;font-weight:600;}
+.pw-modal label{display:block;font-size:12px;color:rgba(255,255,255,0.6);margin:0 0 6px;font-weight:500;}
+.pw-modal label i{margin-right:4px;font-size:11px;color:rgba(255,255,255,0.45);}
+.pw-modal input{display:block;width:100%;padding:12px 14px;margin-bottom:14px;border-radius:10px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.04);color:#fff;font-size:14px;font-family:inherit;outline:none;transition:border-color 0.2s,box-shadow 0.2s;box-sizing:border-box;}
+.pw-modal input::placeholder{color:rgba(255,255,255,0.3);}
+.pw-modal input:focus{border-color:#6090ff;box-shadow:0 0 0 3px rgba(96,144,255,0.15);}
+.pw-modal.reset input:focus{border-color:#ef4444;box-shadow:0 0 0 3px rgba(239,68,68,0.15);}
+.pw-modal-error{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#fca5a5;display:none;}
+.pw-modal-success{background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#6ee7b7;display:none;}
+.pw-modal-btns{display:flex;gap:10px;margin-top:8px;}
+.pw-modal-btn{flex:1;padding:12px 0;border-radius:10px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;transition:all 0.2s;border:none;display:inline-flex;align-items:center;justify-content:center;gap:6px;}
+.pw-modal-btn.cancel{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.7);}
+.pw-modal-btn.cancel:hover{background:rgba(255,255,255,0.1);color:#fff;}
+.pw-modal.change .pw-modal-btn.confirm{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;box-shadow:0 4px 15px rgba(99,102,241,0.35);}
+.pw-modal.change .pw-modal-btn.confirm:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(99,102,241,0.5);}
+.pw-modal.reset .pw-modal-btn.confirm{background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;box-shadow:0 4px 15px rgba(239,68,68,0.35);}
+.pw-modal.reset .pw-modal-btn.confirm:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(239,68,68,0.5);}
+.pw-modal-btn:disabled{opacity:0.55;cursor:not-allowed;transform:none;box-shadow:none;}
+
 /* ── 상태 화면 (대기/거부/기기제한) ── */
 .status-screen{position:fixed;inset:0;background:#050510;z-index:100;display:flex;align-items:center;justify-content:center;text-align:center;font-family:'Pretendard',sans-serif;}
 .status-card{max-width:480px;padding:48px 40px;border-radius:20px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);backdrop-filter:blur(20px);}
@@ -254,6 +289,11 @@ body{font-family:'Pretendard',sans-serif;background:#000;color:#e2e8f0;overflow:
       <input class="auth-input" type="password" id="loginPw" placeholder="비밀번호" autocomplete="current-password">
       <button class="auth-btn" id="loginBtn" onclick="doLogin()">로그인</button>
       <div class="auth-toggle">계정이 없으신가요? <a onclick="toggleAuthForm('signup')">회원가입</a></div>
+      <div class="auth-sublinks">
+        <a onclick="openPwChangeModal()"><i class="fas fa-key"></i> 비밀번호 변경</a>
+        <span class="auth-sublinks-sep">|</span>
+        <a onclick="openPwResetModal()"><i class="fas fa-unlock"></i> 비밀번호 분실</a>
+      </div>
     </div>
     <!-- 회원가입 폼 -->
     <div id="signupForm" style="display:none;">
@@ -670,6 +710,134 @@ function doLogin() {
     btn.disabled = false;
     btn.textContent = '로그인';
   });
+}
+
+/* ── 비밀번호 변경 모달 ── */
+function openPwChangeModal() {
+  var empNo = (document.getElementById('loginEmpNo').value || '').trim();
+  var label = document.getElementById('pwChangeEmpNoLabel');
+  if (empNo) {
+    label.textContent = empNo;
+    label.style.color = '';
+  } else {
+    label.textContent = '(로그인 화면에서 사원번호를 먼저 입력하세요)';
+    label.style.color = '#fbbf24';
+  }
+  ['pwCurrentInput','pwNewInput','pwNewConfirmInput'].forEach(function(id) {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('pwChangeError').style.display = 'none';
+  document.getElementById('pwChangeSuccess').style.display = 'none';
+  var btn = document.getElementById('pwChangeBtn');
+  btn.disabled = false; btn.textContent = '변경하기';
+  document.getElementById('pwChangeModal').classList.add('show');
+}
+function closePwChangeModal() {
+  document.getElementById('pwChangeModal').classList.remove('show');
+}
+function _showPwChangeError(msg) {
+  var el = document.getElementById('pwChangeError');
+  el.textContent = msg; el.style.display = 'block';
+  document.getElementById('pwChangeSuccess').style.display = 'none';
+}
+function doPwChange() {
+  var empNo = (document.getElementById('loginEmpNo').value || '').trim();
+  var cur = document.getElementById('pwCurrentInput').value;
+  var nw = document.getElementById('pwNewInput').value;
+  var nc = document.getElementById('pwNewConfirmInput').value;
+
+  if (!empNo) return _showPwChangeError('로그인 화면에서 사원번호를 먼저 입력한 뒤 다시 시도해 주세요.');
+  if (!cur) return _showPwChangeError('현재 비밀번호를 입력해 주세요.');
+  if (!nw || nw.length < 4) return _showPwChangeError('새 비밀번호는 4자리 이상이어야 합니다.');
+  if (nw !== nc) return _showPwChangeError('새 비밀번호가 일치하지 않습니다.');
+  if (nw === cur) return _showPwChangeError('새 비밀번호가 기존 비밀번호와 동일합니다.');
+
+  var btn = document.getElementById('pwChangeBtn');
+  btn.disabled = true; btn.textContent = '변경 중...';
+
+  db.collection('users').where('employeeNo', '==', empNo).limit(1).get()
+    .then(function(qs) {
+      if (qs.empty) throw { code: 'auth/user-not-found' };
+      var email = qs.docs[0].data().email;
+      if (!email) throw { code: 'auth/user-not-found' };
+      return auth.signInWithEmailAndPassword(email, cur);
+    })
+    .then(function(cred) {
+      return cred.user.updatePassword(nw);
+    })
+    .then(function() {
+      return auth.signOut();
+    })
+    .then(function() {
+      var succ = document.getElementById('pwChangeSuccess');
+      succ.textContent = '비밀번호가 변경되었습니다. 새 비밀번호로 로그인해 주세요.';
+      succ.style.display = 'block';
+      document.getElementById('pwChangeError').style.display = 'none';
+      btn.textContent = '완료';
+      setTimeout(closePwChangeModal, 1800);
+    })
+    .catch(function(err) {
+      _showPwChangeError(getAuthErrorMsg(err && err.code));
+      btn.disabled = false; btn.textContent = '변경하기';
+    });
+}
+
+/* ── 비밀번호 분실(초기화) 모달 ── */
+function openPwResetModal() {
+  document.getElementById('pwResetEmpNo').value = '';
+  document.getElementById('pwResetName').value = '';
+  document.getElementById('pwResetError').style.display = 'none';
+  document.getElementById('pwResetSuccess').style.display = 'none';
+  var btn = document.getElementById('pwResetBtn');
+  btn.disabled = false; btn.innerHTML = '<i class="fas fa-user-check"></i> 본인 확인';
+  document.getElementById('pwResetModal').classList.add('show');
+}
+function closePwResetModal() {
+  document.getElementById('pwResetModal').classList.remove('show');
+}
+function _showPwResetError(msg) {
+  var el = document.getElementById('pwResetError');
+  el.textContent = msg; el.style.display = 'block';
+  document.getElementById('pwResetSuccess').style.display = 'none';
+}
+function doPwReset() {
+  var empNo = (document.getElementById('pwResetEmpNo').value || '').trim();
+  var name = (document.getElementById('pwResetName').value || '').trim();
+
+  if (!empNo) return _showPwResetError('사원번호를 입력해 주세요.');
+  if (!name) return _showPwResetError('등록된 이름을 입력해 주세요.');
+
+  var btn = document.getElementById('pwResetBtn');
+  btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 확인 중...';
+
+  db.collection('users').where('employeeNo', '==', empNo).limit(1).get()
+    .then(function(qs) {
+      if (qs.empty) throw { code: 'auth/user-not-found' };
+      var data = qs.docs[0].data();
+      if (!data || (data.displayName || '').trim() !== name) {
+        throw { code: 'auth/user-not-found' };
+      }
+      if (!data.email) throw { code: 'auth/user-not-found' };
+      return auth.sendPasswordResetEmail(data.email);
+    })
+    .then(function() {
+      var succ = document.getElementById('pwResetSuccess');
+      succ.textContent = '등록된 이메일로 비밀번호 재설정 링크를 발송했습니다. 메일함을 확인해 주세요.';
+      succ.style.display = 'block';
+      document.getElementById('pwResetError').style.display = 'none';
+      btn.innerHTML = '<i class="fas fa-check"></i> 발송 완료';
+      setTimeout(closePwResetModal, 2800);
+    })
+    .catch(function(err) {
+      var code = err && err.code;
+      if (code === 'auth/user-not-found') {
+        _showPwResetError('등록된 정보와 일치하지 않습니다. 사원번호와 이름을 다시 확인해 주세요.');
+      } else {
+        _showPwResetError(getAuthErrorMsg(code));
+      }
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-user-check"></i> 본인 확인';
+    });
 }
 
 /* ── 로그아웃 ── */
@@ -1267,6 +1435,46 @@ if('serviceWorker' in navigator){
     <div class="logout-modal-btns">
       <button class="logout-modal-btn cancel" onclick="closeLogoutModal()">취소</button>
       <button class="logout-modal-btn confirm" onclick="confirmLogout()">로그아웃</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 비밀번호 변경 모달 ═══ -->
+<div class="pw-modal-overlay" id="pwChangeModal">
+  <div class="pw-modal change">
+    <div class="pw-modal-icon"><i class="fas fa-shield-halved"></i></div>
+    <div class="pw-modal-title">비밀번호 변경</div>
+    <div class="pw-modal-subtitle">사원번호: <b id="pwChangeEmpNoLabel">-</b></div>
+    <div class="pw-modal-error" id="pwChangeError"></div>
+    <div class="pw-modal-success" id="pwChangeSuccess"></div>
+    <label>현재 비밀번호</label>
+    <input type="password" id="pwCurrentInput" placeholder="현재 비밀번호 입력" autocomplete="current-password">
+    <label>새 비밀번호</label>
+    <input type="password" id="pwNewInput" placeholder="4자리 이상 입력" autocomplete="new-password">
+    <label>새 비밀번호 확인</label>
+    <input type="password" id="pwNewConfirmInput" placeholder="새 비밀번호 다시 입력" autocomplete="new-password">
+    <div class="pw-modal-btns">
+      <button class="pw-modal-btn cancel" onclick="closePwChangeModal()">취소</button>
+      <button class="pw-modal-btn confirm" id="pwChangeBtn" onclick="doPwChange()">변경하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 비밀번호 분실(초기화) 모달 ═══ -->
+<div class="pw-modal-overlay" id="pwResetModal">
+  <div class="pw-modal reset">
+    <div class="pw-modal-icon"><i class="fas fa-unlock"></i></div>
+    <div class="pw-modal-title">비밀번호 초기화</div>
+    <div class="pw-modal-desc">본인 확인을 위해<br><b>사번</b>과 <b>등록된 이름</b>을 정확히 입력해 주세요.</div>
+    <div class="pw-modal-error" id="pwResetError"></div>
+    <div class="pw-modal-success" id="pwResetSuccess"></div>
+    <label><i class="fas fa-id-card"></i> 사원번호</label>
+    <input type="text" id="pwResetEmpNo" placeholder="등록된 사원번호 입력" autocomplete="off">
+    <label><i class="fas fa-user"></i> 등록된 이름 (본인 확인)</label>
+    <input type="text" id="pwResetName" placeholder="시스템에 등록된 본인 이름" autocomplete="off">
+    <div class="pw-modal-btns">
+      <button class="pw-modal-btn cancel" onclick="closePwResetModal()">취소</button>
+      <button class="pw-modal-btn confirm" id="pwResetBtn" onclick="doPwReset()"><i class="fas fa-user-check"></i> 본인 확인</button>
     </div>
   </div>
 </div>

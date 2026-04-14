@@ -3,10 +3,8 @@ tests/
 .github/
 .claude/
 node_modules/
-package.json
-package-lock.json
 CLAUDE.md
 memory.md
 *.md
-_*.js
+_serve.js
 _*.py

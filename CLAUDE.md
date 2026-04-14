@@ -58,6 +58,15 @@
 - 로그인한 **모든 사용자**에게 표시 (관리자 전용 아님)
 - `showLandingButtons()` + `showScreen()` 두 곳에서 display 제어
 
+## 비밀번호 변경/분실 기능 (v=20260414)
+- 로그인 화면 하단에 "비밀번호 변경 | 비밀번호 분실" 링크 (`.auth-sublinks`)
+- **비밀번호 변경**: employee_lookup/{empNo} → email 조회 → signInWithEmailAndPassword → updatePassword → signOut
+- **비밀번호 분실**: employee_lookup/{empNo} + displayName 일치 확인 → sendPasswordResetEmail
+- `employee_lookup` 컬렉션: { uid, email, displayName } — 비로그인 상태 공개 읽기 (PII 최소화)
+- 회원가입(doSignup) 시 batch.set으로 users + employee_lookup 동시 생성
+- 기존 사용자 백필: `_backfill-employee-lookup.js` (관리자 Console에서 1회 실행 완료)
+- **기존 함수 무수정**: doLogin, doSignup, toggleAuthForm, doLogout 등 원본 그대로
+
 ## 배포 순서 (반드시 준수)
 1. `.com` (pro-dashboards.com) 먼저 → git push → 배포 확인
 2. 코드 수정 시 반드시 push/배포까지 완료

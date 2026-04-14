@@ -656,7 +656,11 @@ function doSignup() {
   var isAdmin = ADMIN_EMAILS.indexOf(email.toLowerCase()) !== -1;
 
   auth.createUserWithEmailAndPassword(email, pw).then(function(cred) {
-    return db.collection('users').doc(cred.user.uid).set({
+    // users 문서 + employee_lookup 문서 동시 생성
+    var batch = db.batch();
+    var userRef = db.collection('users').doc(cred.user.uid);
+    var lookupRef = db.collection('employee_lookup').doc(empNo);
+    batch.set(userRef, {
       uid: cred.user.uid,
       email: email.toLowerCase(),
       employeeNo: empNo,
@@ -668,6 +672,13 @@ function doSignup() {
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
       lastLoginAt: firebase.firestore.FieldValue.serverTimestamp()
     });
+    // 비밀번호 변경/분실 기능용 공개 lookup — 이메일+이름만 저장
+    batch.set(lookupRef, {
+      uid: cred.user.uid,
+      email: email.toLowerCase(),
+      displayName: name
+    });
+    return batch.commit();
   }).then(function() {
     if (!isAdmin) sendAdminSignupAlert(name, empNo, email, phone);
   }).catch(function(err) {
@@ -755,16 +766,17 @@ function doPwChange() {
   var btn = document.getElementById('pwChangeBtn');
   btn.disabled = true; btn.textContent = '변경 중...';
 
-  fetch('/api/pw-change', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ empNo: empNo, currentPassword: cur, newPassword: nw })
-  })
-    .then(function(r) { return r.json().then(function(j) { return { ok: r.ok, body: j }; }); })
-    .then(function(resp) {
-      if (!resp.ok || !resp.body.success) {
-        throw new Error((resp.body && resp.body.error) || '비밀번호 변경에 실패했습니다.');
-      }
+  // employee_lookup/{empNo} 에서 email 조회 → 재인증 → updatePassword → signOut
+  db.collection('employee_lookup').doc(empNo).get()
+    .then(function(doc) {
+      if (!doc.exists) throw { code: 'auth/user-not-found' };
+      var email = doc.data().email;
+      if (!email) throw { code: 'auth/user-not-found' };
+      return auth.signInWithEmailAndPassword(email, cur);
+    })
+    .then(function(cred) { return cred.user.updatePassword(nw); })
+    .then(function() { return auth.signOut(); })
+    .then(function() {
       var succ = document.getElementById('pwChangeSuccess');
       succ.textContent = '비밀번호가 변경되었습니다. 새 비밀번호로 로그인해 주세요.';
       succ.style.display = 'block';
@@ -773,7 +785,12 @@ function doPwChange() {
       setTimeout(closePwChangeModal, 1800);
     })
     .catch(function(err) {
-      _showPwChangeError(err.message || '비밀번호 변경에 실패했습니다.');
+      var code = err && err.code;
+      if (code === 'auth/user-not-found') {
+        _showPwChangeError('등록된 사원번호를 찾을 수 없습니다. 관리자에게 문의해 주세요.');
+      } else {
+        _showPwChangeError(getAuthErrorMsg(code));
+      }
       btn.disabled = false; btn.textContent = '변경하기';
     });
 }
@@ -806,16 +823,18 @@ function doPwReset() {
   var btn = document.getElementById('pwResetBtn');
   btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 확인 중...';
 
-  fetch('/api/pw-reset', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ empNo: empNo, name: name })
-  })
-    .then(function(r) { return r.json().then(function(j) { return { ok: r.ok, body: j }; }); })
-    .then(function(resp) {
-      if (!resp.ok || !resp.body.success) {
-        throw new Error((resp.body && resp.body.error) || '재설정 요청에 실패했습니다.');
+  // employee_lookup/{empNo} 에서 이름 일치 확인 → sendPasswordResetEmail
+  db.collection('employee_lookup').doc(empNo).get()
+    .then(function(doc) {
+      if (!doc.exists) throw { code: 'auth/user-not-found' };
+      var data = doc.data() || {};
+      if ((data.displayName || '').trim() !== name) {
+        throw { code: 'auth/user-not-found' };
       }
+      if (!data.email) throw { code: 'auth/user-not-found' };
+      return auth.sendPasswordResetEmail(data.email);
+    })
+    .then(function() {
       var succ = document.getElementById('pwResetSuccess');
       succ.textContent = '등록된 이메일로 비밀번호 재설정 링크를 발송했습니다. 메일함을 확인해 주세요.';
       succ.style.display = 'block';
@@ -824,7 +843,12 @@ function doPwReset() {
       setTimeout(closePwResetModal, 2800);
     })
     .catch(function(err) {
-      _showPwResetError(err.message || '재설정 요청에 실패했습니다.');
+      var code = err && err.code;
+      if (code === 'auth/user-not-found') {
+        _showPwResetError('등록된 정보와 일치하지 않습니다. 사원번호와 이름을 다시 확인해 주세요.');
+      } else {
+        _showPwResetError(getAuthErrorMsg(code));
+      }
       btn.disabled = false;
       btn.innerHTML = '<i class="fas fa-user-check"></i> 본인 확인';
     });

@@ -1,0 +1,62 @@
+// ═══════════════════════════════════════════════════════════════
+// Firestore 보안규칙 — Pro Enterprise AI Main Dashboard
+// ═══════════════════════════════════════════════════════════════
+// 배포 방법:
+//   1. Firebase Console (https://console.firebase.google.com/project/pro-enterprise-ai/firestore/rules)
+//   2. 현재 규칙 백업 (기존 내용 어딘가에 복사 저장)
+//   3. 이 파일 내용을 전체 복사하여 붙여넣기
+//   4. [게시] 버튼 클릭
+//
+// ⚠️ 기존 규칙이 여기에 반영되지 않았다면, users 컬렉션 섹션을 기존 규칙에 맞게 수정하세요.
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── 관리자 이메일 상수 (프론트엔드 ADMIN_EMAILS와 동일하게 유지) ──
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.email in [
+          'proenterpriseai@incarproent.com',
+          'proenterprise@incarproent.com',
+          'youra9ol2l8@gmail.com',
+          'prolimrm@naver.com'
+        ];
+    }
+
+    // ═══ users 컬렉션 (기존 보호 유지) ═══
+    match /users/{uid} {
+      // 본인만 읽기/쓰기 + 관리자 전체 접근
+      allow read: if request.auth != null
+                  && (request.auth.uid == uid || isAdmin());
+      allow create: if request.auth != null && request.auth.uid == uid;
+      allow update: if request.auth != null
+                    && (request.auth.uid == uid || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    // ═══ employee_lookup 컬렉션 (비밀번호 변경/분실용 공개 lookup) ═══
+    // 저장되는 필드: { uid, email, displayName } — PII 최소화
+    // 공개 읽기 허용: 사원번호 → 이메일 매핑 (비로그인 사용자의 비밀번호 복구용)
+    match /employee_lookup/{empNo} {
+      allow read: if true;  // 비로그인 상태에서도 사원번호로 조회 가능
+
+      // 회원가입 직후 본인이 자기 문서만 생성 가능
+      allow create: if request.auth != null
+                    && request.auth.uid == request.resource.data.uid
+                    && request.resource.data.keys().hasOnly(['uid', 'email', 'displayName']);
+
+      // 본인 또는 관리자만 업데이트 (이메일/이름 변경 시)
+      allow update: if (request.auth != null && request.auth.uid == resource.data.uid)
+                    || isAdmin();
+
+      // 삭제는 관리자만
+      allow delete: if isAdmin();
+    }
+
+    // ═══ 그 외 컬렉션 기본 차단 (필요 시 추가) ═══
+    // match /{document=**} {
+    //   allow read, write: if false;
+    // }
+  }
+}

@@ -156,6 +156,7 @@ body{font-family:'Pretendard',sans-serif;background:#000;color:#e2e8f0;overflow:
 .auth-sublinks a:hover{color:#6090ff;text-decoration:underline;}
 .auth-sublinks a i{font-size:11px;}
 .auth-sublinks-sep{color:rgba(255,255,255,0.2);font-size:11px;}
+.caps-lock-warning{color:#ff6b6b;font-size:12px;margin:-4px 0 8px 2px;display:flex;align-items:center;gap:4px;animation:modalFadeIn 0.2s ease;}
 .pw-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.65);backdrop-filter:blur(6px);z-index:9100;display:none;align-items:center;justify-content:center;animation:modalFadeIn 0.2s ease;}
 .pw-modal-overlay.show{display:flex;}
 .pw-modal{width:100%;max-width:400px;padding:34px 30px 26px;border-radius:20px;background:rgba(15,15,30,0.96);border:1px solid rgba(255,255,255,0.1);backdrop-filter:blur(20px);box-shadow:0 0 60px rgba(39,57,140,0.25);text-align:left;animation:modalSlideUp 0.25s ease;}
@@ -287,6 +288,7 @@ body{font-family:'Pretendard',sans-serif;background:#000;color:#e2e8f0;overflow:
       <label class="auth-remember"><input type="checkbox" id="rememberEmpNo" checked> 사원번호 저장</label>
       <input class="auth-input" type="email" id="loginEmail" placeholder="이메일 주소" autocomplete="email">
       <input class="auth-input" type="password" id="loginPw" placeholder="비밀번호" autocomplete="current-password">
+      <div class="caps-lock-warning" id="loginPwCapsWarn" style="display:none;">⚠ Caps Lock이 켜져 있습니다. 비밀번호는 대소문자를 구분합니다.</div>
       <button class="auth-btn" id="loginBtn" onclick="doLogin()">로그인</button>
       <div class="auth-toggle">계정이 없으신가요? <a onclick="toggleAuthForm('signup')">회원가입</a></div>
       <div class="auth-sublinks">
@@ -544,6 +546,9 @@ body{font-family:'Pretendard',sans-serif;background:#000;color:#e2e8f0;overflow:
    ═══════════════════════════════════════ */
 var ADMIN_EMAILS = ['proenterpriseai@incarproent.com', 'proenterprise@incarproent.com', 'youra9ol2l8@gmail.com', 'prolimrm@naver.com'];
 var MAX_DEVICES = 2;
+
+/* ── Feature Flags ── */
+var FEATURE_TEMP_PASSWORD = false; // true 전환 시: 임시비밀번호 시스템 활성화 (서버 환경변수 필수)
 var DEVICE_FP_KEY = 'pro_device_fp';
 
 // ── EmailJS 승인 알림 설정 (값 입력 후 활성화됨) ──
@@ -717,7 +722,15 @@ function doLogin() {
       db.collection('users').doc(user.uid).update({ employeeNo: empNo });
     }
   }).catch(function(err) {
-    showError('loginError', getAuthErrorMsg(err.code));
+    var msg = getAuthErrorMsg(err.code);
+    showError('loginError', msg);
+    // 비밀번호 관련 오류 시 대소문자 힌트 추가
+    if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password') {
+      var hint = document.createElement('div');
+      hint.style.cssText = 'margin-top:6px;padding-top:6px;border-top:1px solid rgba(239,68,68,0.2);font-size:11px;color:#fbbf24;';
+      hint.textContent = '💡 비밀번호는 대소문자를 구분합니다. Caps Lock을 확인해 주세요.';
+      document.getElementById('loginError').appendChild(hint);
+    }
     btn.disabled = false;
     btn.textContent = '로그인';
   });
@@ -746,6 +759,23 @@ function openPwChangeModal() {
 function closePwChangeModal() {
   document.getElementById('pwChangeModal').classList.remove('show');
 }
+/* ── 임시비밀번호 로그인 시 강제 비밀번호 변경 ── */
+function _openForcedPwChange() {
+  openPwChangeModal();
+  // 취소 버튼 비활성화 (닫기 불가)
+  var cancelBtns = document.querySelectorAll('#pwChangeModal .pw-modal-btn.cancel');
+  cancelBtns.forEach(function(b) { b.style.display = 'none'; });
+  // 안내 메시지 표시
+  var succ = document.getElementById('pwChangeSuccess');
+  succ.textContent = '임시 비밀번호로 로그인하셨습니다. 새 비밀번호를 설정해 주세요.';
+  succ.style.display = 'block';
+  succ.style.background = 'rgba(251,191,36,0.12)';
+  succ.style.color = '#fbbf24';
+  succ.style.borderColor = 'rgba(251,191,36,0.3)';
+  // 모달 배경 클릭으로 닫기 방지
+  var overlay = document.getElementById('pwChangeModal');
+  overlay.onclick = function(e) { if (e.target === overlay) e.stopPropagation(); };
+}
 function _showPwChangeError(msg) {
   var el = document.getElementById('pwChangeError');
   el.textContent = msg; el.style.display = 'block';
@@ -759,23 +789,33 @@ function doPwChange() {
 
   if (!empNo) return _showPwChangeError('로그인 화면에서 사원번호를 먼저 입력한 뒤 다시 시도해 주세요.');
   if (!cur) return _showPwChangeError('현재 비밀번호를 입력해 주세요.');
-  if (!nw || nw.length < 4) return _showPwChangeError('새 비밀번호는 4자리 이상이어야 합니다.');
+  if (!nw || nw.length < 6) return _showPwChangeError('새 비밀번호는 6자 이상이어야 합니다.');
   if (nw !== nc) return _showPwChangeError('새 비밀번호가 일치하지 않습니다.');
   if (nw === cur) return _showPwChangeError('새 비밀번호가 기존 비밀번호와 동일합니다.');
 
   var btn = document.getElementById('pwChangeBtn');
   btn.disabled = true; btn.textContent = '변경 중...';
 
-  // employee_lookup/{empNo} 에서 email 조회 → 재인증 → updatePassword → signOut
+  // employee_lookup/{empNo} 에서 email 조회 → reauthenticate → updatePassword → signOut
   db.collection('employee_lookup').doc(empNo).get()
     .then(function(doc) {
       if (!doc.exists) throw { code: 'auth/user-not-found' };
       var email = doc.data().email;
       if (!email) throw { code: 'auth/user-not-found' };
-      return auth.signInWithEmailAndPassword(email, cur);
+      var user = auth.currentUser;
+      if (!user) throw { code: 'auth/user-not-found' };
+      var credential = firebase.auth.EmailAuthProvider.credential(email, cur);
+      return user.reauthenticateWithCredential(credential);
     })
     .then(function(cred) { return cred.user.updatePassword(nw); })
-    .then(function() { return auth.signOut(); })
+    .then(function() {
+      // 임시비밀번호 강제변경 플래그 해제
+      var user = auth.currentUser;
+      if (user) {
+        return db.collection('users').doc(user.uid).update({ mustChangePassword: false }).then(function() { return auth.signOut(); });
+      }
+      return auth.signOut();
+    })
     .then(function() {
       var succ = document.getElementById('pwChangeSuccess');
       succ.textContent = '비밀번호가 변경되었습니다. 새 비밀번호로 로그인해 주세요.';
@@ -823,35 +863,61 @@ function doPwReset() {
   var btn = document.getElementById('pwResetBtn');
   btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 확인 중...';
 
-  // employee_lookup/{empNo} 에서 이름 일치 확인 → sendPasswordResetEmail
-  db.collection('employee_lookup').doc(empNo).get()
-    .then(function(doc) {
-      if (!doc.exists) throw { code: 'auth/user-not-found' };
-      var data = doc.data() || {};
-      if ((data.displayName || '').trim() !== name) {
-        throw { code: 'auth/user-not-found' };
-      }
-      if (!data.email) throw { code: 'auth/user-not-found' };
-      return auth.sendPasswordResetEmail(data.email);
+  if (FEATURE_TEMP_PASSWORD) {
+    // ── 임시비밀번호 방식 (Firebase Cloud Function) ──
+    fetch('https://us-central1-pro-enterprise-ai.cloudfunctions.net/resetPassword', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ empNo: empNo, name: name })
+    })
+    .then(function(resp) {
+      if (!resp.ok) return resp.json().then(function(d) { throw d; });
+      return resp.json();
     })
     .then(function() {
       var succ = document.getElementById('pwResetSuccess');
-      succ.textContent = '등록된 이메일로 비밀번호 재설정 링크를 발송했습니다. 메일함을 확인해 주세요.';
+      succ.textContent = '임시 비밀번호가 이메일로 발송되었습니다. 로그인 후 반드시 비밀번호를 변경해 주세요.';
       succ.style.display = 'block';
       document.getElementById('pwResetError').style.display = 'none';
       btn.innerHTML = '<i class="fas fa-check"></i> 발송 완료';
-      setTimeout(closePwResetModal, 2800);
+      setTimeout(closePwResetModal, 3500);
     })
     .catch(function(err) {
-      var code = err && err.code;
-      if (code === 'auth/user-not-found') {
-        _showPwResetError('등록된 정보와 일치하지 않습니다. 사원번호와 이름을 다시 확인해 주세요.');
-      } else {
-        _showPwResetError(getAuthErrorMsg(code));
-      }
+      _showPwResetError(err.error || '오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
       btn.disabled = false;
       btn.innerHTML = '<i class="fas fa-user-check"></i> 본인 확인';
     });
+  } else {
+    // ── 기존 Firebase 링크 방식 ──
+    db.collection('employee_lookup').doc(empNo).get()
+      .then(function(doc) {
+        if (!doc.exists) throw { code: 'auth/user-not-found' };
+        var data = doc.data() || {};
+        if ((data.displayName || '').trim() !== name) {
+          throw { code: 'auth/user-not-found' };
+        }
+        if (!data.email) throw { code: 'auth/user-not-found' };
+        return auth.sendPasswordResetEmail(data.email);
+      })
+      .then(function() {
+        var succ = document.getElementById('pwResetSuccess');
+        succ.innerHTML = '등록된 이메일로 비밀번호 재설정 링크를 발송했습니다.<br><span style="font-size:11px;color:#fbbf24;">⚠ 링크는 1시간 내에 사용해 주세요.</span>';
+        succ.style.display = 'block';
+        document.getElementById('pwResetError').style.display = 'none';
+        btn.innerHTML = '<i class="fas fa-check"></i> 발송 완료';
+        setTimeout(closePwResetModal, 2800);
+      })
+      .catch(function(err) {
+        var code = err && err.code;
+        if (code === 'auth/user-not-found') {
+          _showPwResetError('등록된 정보와 일치하지 않습니다. 사원번호와 이름을 다시 확인해 주세요.');
+        } else {
+          _showPwResetError(getAuthErrorMsg(code));
+        }
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-user-check"></i> 본인 확인';
+      });
+  }
 }
 
 /* ── 로그아웃 ── */
@@ -1014,6 +1080,10 @@ auth.onAuthStateChanged(function(user) {
       showLandingButtons(true, isAdmin);
       if (isAdmin && sessionStorage.getItem('adminDashboardOpen') === 'true') {
         openAdmin();
+      }
+      // ── 임시비밀번호 강제 변경 체크 ──
+      if (FEATURE_TEMP_PASSWORD && data.mustChangePassword) {
+        _openForcedPwChange();
       }
       hideSplash();
     }
@@ -1192,6 +1262,21 @@ document.addEventListener('keydown', function(e) {
     document.getElementById('loginEmpNo').value = saved;
     document.getElementById('rememberEmpNo').checked = true;
   }
+})();
+
+/* ── Caps Lock 감지 (비밀번호 필드 공통) ── */
+(function() {
+  function setupCapsLockDetection(inputId) {
+    var input = document.getElementById(inputId);
+    var warn = document.getElementById(inputId + 'CapsWarn');
+    if (!input || !warn) return;
+    function check(e) { warn.style.display = e.getModifierState('CapsLock') ? 'block' : 'none'; }
+    input.addEventListener('keydown', check);
+    input.addEventListener('keyup', check);
+  }
+  setupCapsLockDetection('loginPw');
+  setupCapsLockDetection('pwCurrentInput');
+  setupCapsLockDetection('pwNewInput');
 })();
 </script>
 
@@ -1463,8 +1548,10 @@ if('serviceWorker' in navigator){
     <div class="pw-modal-success" id="pwChangeSuccess"></div>
     <label>현재 비밀번호</label>
     <input type="password" id="pwCurrentInput" placeholder="현재 비밀번호 입력" autocomplete="current-password">
+    <div class="caps-lock-warning" id="pwCurrentInputCapsWarn" style="display:none;">⚠ Caps Lock이 켜져 있습니다</div>
     <label>새 비밀번호</label>
-    <input type="password" id="pwNewInput" placeholder="4자리 이상 입력" autocomplete="new-password">
+    <input type="password" id="pwNewInput" placeholder="6자 이상 입력" autocomplete="new-password">
+    <div class="caps-lock-warning" id="pwNewInputCapsWarn" style="display:none;">⚠ Caps Lock이 켜져 있습니다</div>
     <label>새 비밀번호 확인</label>
     <input type="password" id="pwNewConfirmInput" placeholder="새 비밀번호 다시 입력" autocomplete="new-password">
     <div class="pw-modal-btns">

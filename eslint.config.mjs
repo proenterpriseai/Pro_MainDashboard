@@ -3,7 +3,7 @@ import html from "eslint-plugin-html";
 export default [
   {
     files: ["**/*.js"],
-    ignores: ["node_modules/**", "_*.js", "tests/**"],
+    ignores: ["node_modules/**", "_*.js", "tests/**", "functions/**"],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: "script",

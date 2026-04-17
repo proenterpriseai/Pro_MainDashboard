@@ -24,6 +24,83 @@ jobs:
             exit 1
           fi
 
+      # ── 1-2. 보장분석 Deep Check (v=20260417 작업 반영) ──
+      - name: 보장분석 Deep Check — 버전·핵심 함수·Feature Flag·외부 JS·HTML 크기
+        run: |
+          HTML=$(curl -s --max-time 30 https://pro-insuranceanalysis.com/)
+
+          # 1. 버전 태그 존재 확인 (배포 이상 감지)
+          if ! echo "$HTML" | grep -q 'parserEngineV2\.js?v=[a-z0-9]\+'; then
+            echo "❌ parserEngineV2 버전 태그 없음 — 배포 이상 의심"; exit 1
+          fi
+          CURR_VER=$(echo "$HTML" | grep -oE 'parserEngineV2\.js\?v=[a-z0-9]+' | head -1 | sed 's|.*?v=||')
+          echo "✅ 현재 배포 버전: v=$CURR_VER"
+
+          # 2. 핵심 함수 존재 확인 (v=20260417 작업물 유실 감지)
+          MISSING=""
+          for FN in "renderRemodelingProposalV2" "_remodelCalcAdjPremForCi" "_convertGeminiToParserFormat" "_callGeminiDirect" "printVisualReport" "printBeforeAnalysisReport" "printRemodelingReport" "printTimelineReport" "_parseAmountToManwon" "_buildPrintCover"; do
+            if echo "$HTML" | grep -q "function $FN\|$FN = function\|$FN("; then
+              echo "  ✅ $FN"
+            else
+              echo "  ❌ $FN 누락"
+              MISSING="$MISSING $FN"
+            fi
+          done
+          if [ -n "$MISSING" ]; then
+            echo "❌ 핵심 함수 누락:$MISSING — 코드 손실 의심"; exit 1
+          fi
+
+          # 3. Feature Flag 상태 (의도치 않은 변경 감지)
+          echo "📌 Feature Flag 상태:"
+          echo "$HTML" | grep -oE 'FEATURE_(UW_RECOMMEND|PROPOSAL_UPLOAD|REMODELING_V2) = (true|false)' | head -5 | sed 's/^/  /'
+          # UW는 false여야 함 (검증 미완료 상태)
+          if echo "$HTML" | grep -q 'FEATURE_UW_RECOMMEND = true'; then
+            echo "⚠️ FEATURE_UW_RECOMMEND = true 감지 — 의도된 공개인지 확인 필요"
+          fi
+          # PROPOSAL_UPLOAD/REMODELING_V2는 현재 true여야 함 (공개 상태)
+          if echo "$HTML" | grep -q 'FEATURE_PROPOSAL_UPLOAD = false'; then
+            echo "⚠️ FEATURE_PROPOSAL_UPLOAD = false 감지 — 제안보험 AI 업로드 비활성 상태"
+          fi
+          if echo "$HTML" | grep -q 'FEATURE_REMODELING_V2 = false'; then
+            echo "⚠️ FEATURE_REMODELING_V2 = false 감지 — 리모델링 V2 비활성 상태"
+          fi
+
+          # 4. HTML 크기 sanity check
+          SIZE=$(echo -n "$HTML" | wc -c)
+          if [ "$SIZE" -lt 800000 ] || [ "$SIZE" -gt 2500000 ]; then
+            echo "❌ HTML 크기 이상: $SIZE bytes (기대 800KB~2.5MB)"; exit 1
+          fi
+          echo "✅ HTML 크기 정상 ($SIZE bytes)"
+
+          # 5. 외부 JS 5개 로드 가능 확인 (404 감지, 같은 버전 태그로 통일됐는지도 확인)
+          for JS in "coverageMaster.js" "masterReport.js" "masterReportTemplate.js" "masterReportPages.js" "parserEngineV2.js"; do
+            VERSION=$(echo "$HTML" | grep -oE "$JS\?v=[a-z0-9]+" | head -1 | sed "s|$JS?||")
+            if [ -z "$VERSION" ]; then
+              echo "❌ $JS 태그 없음"; exit 1
+            fi
+            STATUS=$(curl -f --max-time 15 -o /dev/null -s -w "%{http_code}" "https://pro-insuranceanalysis.com/$JS?$VERSION")
+            if [ "$STATUS" = "200" ]; then
+              echo "  ✅ $JS?$VERSION → 200"
+            else
+              echo "  ❌ $JS 로드 실패 (HTTP $STATUS)"; exit 1
+            fi
+          done
+
+          # 6. /api/pdf 엔드포인트 응답 확인 (Vercel Serverless 살아있는지)
+          PDF_STATUS=$(curl --max-time 15 -o /dev/null -s -w "%{http_code}" -X POST \
+            -H "Content-Type: application/json" \
+            -d '{"html":"<html><body>test</body></html>","landscape":true}' \
+            https://pro-insuranceanalysis.com/api/pdf)
+          if [ "$PDF_STATUS" = "200" ]; then
+            echo "✅ /api/pdf (Puppeteer) 정상"
+          elif [ "$PDF_STATUS" = "400" ] || [ "$PDF_STATUS" = "405" ]; then
+            echo "⚠️ /api/pdf 응답 HTTP $PDF_STATUS (엔드포인트는 살아있음)"
+          else
+            echo "❌ /api/pdf 이상 (HTTP $PDF_STATUS)"; exit 1
+          fi
+
+          echo "✅ 보장분석 Deep Check 전부 통과"
+
       # ── 2. DB영업관리 시스템 ──
       - name: DB영업관리 (pro-salessystem.com)
         run: |
@@ -114,6 +191,7 @@ jobs:
           echo "================================================"
           echo "✅ 5대 시스템 + UW DB 전체 정상"
           echo "  보장분석:       pro-insuranceanalysis.com ✅"
+          echo "  보장분석 Deep:  버전·함수·Flag·JS·크기·/api/pdf ✅"
           echo "  DB영업관리:     pro-salessystem.com ✅"
           echo "  메인 대시보드:   pro-dashboards.com ✅"
           echo "  통합금융계산기:  pro-financecalculator.vercel.app ✅"

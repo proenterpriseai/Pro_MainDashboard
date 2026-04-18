@@ -98,3 +98,25 @@
 1. `.com` (pro-dashboards.com) 먼저 → git push → 배포 확인
 2. 코드 수정 시 반드시 push/배포까지 완료
 - **커밋 시**: Co-Authored-By 태그 필수
+
+## 모바일 최적화 규칙 (v=20260418a/b/c)
+- **격리 전략**: 모든 모바일 스타일은 `@media(max-width:640px)` 블록에 격리. 데스크톱 UX 불변 필수
+- **터치 영역**: 버튼/링크 최소 `min-height: 36~44px` (Apple HIG / Google Material 가이드)
+- **iOS Safari 16px 룰**: 입력창 `font-size:16px` 미만이면 포커스 시 자동 줌 발동 → 모든 input 16px 고정
+- **safe-area**: `env(safe-area-inset-*)` 적용 대상 = body, auth-overlay, admin-overlay (PWA standalone 대응)
+- **카드폭 공식**: `calc(100vw - 142px)` = hero margin(20) + content padding(32) + wrapper padding(88) + border(2)
+- **캐러셀 getCardWidth**: DOM 기반 측정(`getBoundingClientRect().width + 18`) — CSS 폭 변경 시 JS 수정 불필요
+- **landscape 전용**: `@media(max-height:500px) and (orientation:landscape)` 별도 블록 — `body{align-items:flex-start}` 필수 (hero 상단 클립 방지)
+- **관리자 테이블 → 카드형**: `data-label` 속성 + `td::before{content:attr(data-label)}` 패턴. thead는 `position:absolute;top:-9999px`
+- **접근성**: Three.js Aurora는 `prefers-reduced-motion` 존중 — reduce 설정 시 정적 프레임 1회만 렌더
+- **SW 캐시 bump**: 모바일 CSS 수정 시 반드시 `CACHE_NAME` 버전업 (현재 `pro-ai-v9`)
+
+## Open Graph 링크 미리보기 (v=20260418)
+- `og-image.png` (1200×630, 배경 `#28398C`, `logo.png` 중앙 합성 — Python PIL로 생성)
+- **og:title**: "프로사업단총괄 AI 시스템"
+- **og:description**: "보장 분석부터 DB 영업관리, 통합 금융 계산기, 전문 비서 챗봇까지"
+- 이미지 URL에 `?v=YYYYMMDD` 쿼리 파라미터 붙여서 CDN 캐시 우회
+- **OG 수정 후 반드시 캐시 초기화**:
+  - 카카오: https://developers.kakao.com/tool/clear/og → URL 입력 → "캐시 초기화"
+  - 페이스북: https://developers.facebook.com/tools/debug/ → "Scrape Again"
+- 카카오 링크 캐시 수명 약 7일 — 초기화 안 하면 사용자에게 이전 이미지 노출

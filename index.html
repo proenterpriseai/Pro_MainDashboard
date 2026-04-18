@@ -264,9 +264,33 @@ body{font-family:'Pretendard',sans-serif;background:#000;color:#e2e8f0;overflow:
   .hero-frame{width:calc(100% - 20px);border-radius:18px;height:auto;max-height:none;}
   body{overflow:auto;}
   .content{padding:20px 16px 16px;}
-  .tool-card{min-width:calc(100% - 0px);}
+  /* ② 카드 폭 viewport 맞춤 — hero margin(20) + content padding(32) + wrapper padding(88) = 140 */
+  .tool-card{min-width:calc(100vw - 142px);width:calc(100vw - 142px);box-sizing:border-box;}
   .hero-title{letter-spacing:-1px;}
-  .carousel-wrapper{padding:0 30px;}
+  /* ⑦ 화살표가 카드 위에 오버랩되지 않도록 wrapper padding 30→44 확대 */
+  .carousel-wrapper{padding:0 44px;}
+  .carousel-btn.prev{left:0;}
+  .carousel-btn.next{right:0;}
+
+  /* ── 모바일 최적화 1차 패치 (v=20260418a) ── */
+  /* ① 관리자/로그아웃/헬프데스크 버튼 줄바꿈 방지 + 터치 영역 확보 */
+  .logo-action-btn{padding:8px 12px;font-size:11.5px;white-space:nowrap;min-height:40px;display:inline-flex;align-items:center;justify-content:center;}
+  .logo-actions{gap:6px;}
+  .logo-actions-row{gap:6px;}
+  /* ③ 히어로 배지 ↔ 헬프데스크 heroFloat 겹침 방지 */
+  .hero-content{animation:none;margin-top:10px;padding:0 12px;}
+  .hero-badge{margin-bottom:16px;font-size:12px;padding:5px 14px;}
+  /* ⑥ 캐러셀 화살표 터치 영역 44px */
+  .carousel-btn{width:44px;height:44px;}
+  .auth-sublinks a{min-height:36px;padding:4px 6px;}
+  /* ⑧ iOS 입력창 자동 확대 방지 (16px 미만 시 zoom 발동) */
+  .auth-input,.pw-modal input,.admin-search input{font-size:16px;}
+  /* ⑪ footer 좌우 여백 */
+  .footer{padding:14px 16px 0;font-size:10.5px;line-height:1.5;}
+  /* ⑫ iOS 노치/홈 인디케이터 safe-area 대응 (PWA standalone) */
+  body{padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);}
+  .auth-overlay{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);box-sizing:border-box;}
+  .admin-overlay{padding-top:env(safe-area-inset-top);box-sizing:border-box;}
 }
 </style>
 </head>

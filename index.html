@@ -312,7 +312,25 @@ body{font-family:'Pretendard',sans-serif;background:#000;color:#e2e8f0;overflow:
   /* 관리자 헤더/테이블 여백 축소 */
   .admin-header{padding:14px 16px;}
   .admin-header h2{font-size:17px;}
-  .admin-table-wrap{padding:0 16px 24px;}
+  .admin-table-wrap{padding:0 16px 24px;overflow-x:visible;}
+
+  /* ── 모바일 최적화 3차 패치 (v=20260418c) ── */
+  /* ④ 관리자 테이블 → 카드형 전환 (data-label pattern) */
+  .admin-table,.admin-table thead,.admin-table tbody,.admin-table tr,.admin-table th,.admin-table td{display:block;}
+  .admin-table thead{position:absolute;top:-9999px;left:-9999px;}
+  .admin-table tr{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:14px 16px;margin-bottom:10px;}
+  .admin-table tr:hover td{background:transparent;}
+  .admin-table td{text-align:left;padding:6px 0;border:none;white-space:normal;word-break:break-all;display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px;min-height:32px;}
+  .admin-table td::before{content:attr(data-label);color:rgba(255,255,255,0.45);font-size:11px;font-weight:500;flex:0 0 auto;min-width:70px;}
+  .admin-table td[data-label="관리"]{flex-wrap:wrap;justify-content:flex-start;padding-top:10px;margin-top:6px;border-top:1px solid rgba(255,255,255,0.05);}
+  .admin-table td[data-label="관리"]::before{flex-basis:100%;margin-bottom:4px;}
+  .admin-action{padding:8px 14px;font-size:12px;min-height:36px;margin-right:6px;margin-bottom:4px;}
+
+  /* ⑤ deviceLimitScreen 터치 영역 확보 */
+  .device-item{padding:14px 16px;gap:14px;}
+  .device-info .label{font-size:14px;}
+  .device-info .date{font-size:12px;}
+  .device-replace-btn{padding:10px 16px;font-size:13px;min-height:40px;flex-shrink:0;}
 }
 
 /* ② landscape(가로) 모드 전용 — 세로 500px 이하 */
@@ -1214,7 +1232,7 @@ function renderAdminTable(users) {
       actions = '<span style="color:rgba(255,255,255,0.3);font-size:11px;">관리자</span>';
     }
     var tr = document.createElement('tr');
-    tr.innerHTML = '<td>' + (u.employeeNo || '-') + '</td><td>' + (u.displayName || '-') + '</td><td>' + (u.phone || '-') + '</td><td>' + u.email + '</td><td><span class="badge ' + badgeClass + '">' + badgeText + '</span></td><td>' + deviceCount + '/' + MAX_DEVICES + '</td><td>' + created + '</td><td>' + lastLogin + '</td><td>' + actions + '</td>';
+    tr.innerHTML = '<td data-label="사원번호">' + (u.employeeNo || '-') + '</td><td data-label="이름">' + (u.displayName || '-') + '</td><td data-label="핸드폰">' + (u.phone || '-') + '</td><td data-label="이메일">' + u.email + '</td><td data-label="상태"><span class="badge ' + badgeClass + '">' + badgeText + '</span></td><td data-label="기기">' + deviceCount + '/' + MAX_DEVICES + '</td><td data-label="가입일">' + created + '</td><td data-label="최근 접속">' + lastLogin + '</td><td data-label="관리">' + actions + '</td>';
     tbody.appendChild(tr);
   });
 }
@@ -1432,11 +1450,18 @@ document.addEventListener('keydown', function(e) {
     resize();
     window.addEventListener('resize',resize);
 
-    (function animate(ts){
-      requestAnimationFrame(animate);
-      mat.uniforms.u_time.value=ts*0.001;
+    // 접근성: prefers-reduced-motion 존중 — 정적 프레임 1회만 렌더
+    var _reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if(_reduceMotion){
+      mat.uniforms.u_time.value = 1.2;
       renderer.render(scene,camera);
-    })(0);
+    } else {
+      (function animate(ts){
+        requestAnimationFrame(animate);
+        mat.uniforms.u_time.value=ts*0.001;
+        renderer.render(scene,camera);
+      })(0);
+    }
   }
 
   /* ═══════════════════════════════════════

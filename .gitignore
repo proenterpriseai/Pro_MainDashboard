@@ -2,3 +2,5 @@ icon-512-backup.png
 icon.ico
 .vercel
 node_modules/
+firebase-debug.log
+firebase-debug.*.log

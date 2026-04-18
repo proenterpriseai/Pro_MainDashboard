@@ -58,14 +58,41 @@
 - 로그인한 **모든 사용자**에게 표시 (관리자 전용 아님)
 - `showLandingButtons()` + `showScreen()` 두 곳에서 display 제어
 
-## 비밀번호 변경/분실 기능 (v=20260414)
+## 비밀번호 변경/분실 기능 (v=20260416)
 - 로그인 화면 하단에 "비밀번호 변경 | 비밀번호 분실" 링크 (`.auth-sublinks`)
-- **비밀번호 변경**: employee_lookup/{empNo} → email 조회 → signInWithEmailAndPassword → updatePassword → signOut
-- **비밀번호 분실**: employee_lookup/{empNo} + displayName 일치 확인 → sendPasswordResetEmail
+- **비밀번호 변경**: employee_lookup/{empNo} → email 조회 → `reauthenticateWithCredential()` → updatePassword → signOut
+  - ⚠️ `signInWithEmailAndPassword` 아님! `reauthenticateWithCredential` 패턴 사용 (v=20260416 변경)
+- **비밀번호 분실**: employee_lookup/{empNo} + displayName 일치 확인 → sendPasswordResetEmail (링크 1시간 유효)
+- **비밀번호 최소 길이**: 6자 (Firebase Auth 기준 통일, v=20260416)
 - `employee_lookup` 컬렉션: { uid, email, displayName } — 비로그인 상태 공개 읽기 (PII 최소화)
 - 회원가입(doSignup) 시 batch.set으로 users + employee_lookup 동시 생성
 - 기존 사용자 백필: `_backfill-employee-lookup.js` (관리자 Console에서 1회 실행 완료)
 - **기존 함수 무수정**: doLogin, doSignup, toggleAuthForm, doLogout 등 원본 그대로
+
+## Caps Lock 감지 + 대소문자 경고 (v=20260416)
+- 비밀번호 필드 3곳에 Caps Lock 실시간 경고: `#loginPw`, `#pwCurrentInput`, `#pwNewInput`
+- `.caps-lock-warning` CSS 클래스, `setupCapsLockDetection()` 유틸 함수
+- 로그인 실패 시(`auth/invalid-credential`, `auth/wrong-password`) 노란색 대소문자 힌트 표시
+- `e.getModifierState('CapsLock')` 사용 (keydown/keyup 이벤트)
+
+## Feature Flag (v=20260416)
+- `FEATURE_TEMP_PASSWORD = false` — 임시비밀번호 시스템 (미활성)
+  - `true` 전환 시: `doPwReset()`이 Cloud Function 호출, 로그인 후 `mustChangePassword` 체크
+  - **현재 미배포**: Google Cloud 조직 정책이 Cloud Functions 배포/서비스 계정 키 생성 차단
+  - `functions/` 디렉토리에 코드 준비 완료, 조직 정책 완화 시 배포 가능
+
+## 관리자 비밀번호 초기화 도구 (v=20260416)
+- **`_reset-user-pw.js`**: PowerShell에서 `node _reset-user-pw.js [사원번호]` 실행
+- Firebase CLI 인증 토큰을 읽어서 Identity Platform REST API로 직접 비밀번호 변경
+- 이메일 링크 불필요, 1시간 만료 문제 없음
+- **사전 조건**: `firebase login` 완료 상태여야 함
+
+## ⚠️ Google Cloud 조직 정책 제약 (v=20260416)
+- 조직 정책 `iam.disableServiceAccountKeyCreation` 적용 중
+- **서비스 계정 키 생성 불가** (Firebase Console, Google Cloud Console 모두)
+- **Cloud Functions 배포 불가** (Cloud Build 권한 없음)
+- Firebase Blaze(종량제) 플랜 업그레이드 완료 (2026-04-16)
+- Firebase 이메일 템플릿 수정 불가 (조직 정책 또는 Spark→Blaze 전환 직후 제한)
 
 ## 배포 순서 (반드시 준수)
 1. `.com` (pro-dashboards.com) 먼저 → git push → 배포 확인

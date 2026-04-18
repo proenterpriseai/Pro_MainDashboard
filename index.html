@@ -291,6 +291,45 @@ body{font-family:'Pretendard',sans-serif;background:#000;color:#e2e8f0;overflow:
   body{padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);}
   .auth-overlay{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);box-sizing:border-box;}
   .admin-overlay{padding-top:env(safe-area-inset-top);box-sizing:border-box;}
+
+  /* ── 모바일 최적화 2차 패치 (v=20260418b) ── */
+  /* ③ 모달/auth-card 좌우 여백 확보 */
+  .auth-card{max-width:calc(100% - 24px);margin:12px;}
+  .pw-modal{max-width:calc(100% - 24px);margin:12px;}
+  .logout-modal{max-width:calc(100% - 24px);margin:12px;}
+  /* ④ 모달/상태 버튼 터치 영역 44px 확보 */
+  .logout-modal-btn,.pw-modal-btn{min-height:44px;padding:12px 0;}
+  .status-btn{min-height:44px;padding:12px 28px;display:inline-flex;align-items:center;justify-content:center;}
+  .admin-close{min-height:36px;padding:10px 20px;}
+  /* ① admin-search 가로 레이아웃 수정 (customSelect viewport 초과 방지) */
+  .admin-search{flex-wrap:wrap;padding:0 16px 16px;gap:8px;}
+  .admin-search input{min-width:0;flex:1 1 100%;}
+  .custom-select{flex:0 0 auto;min-width:110px;}
+  /* ⑤ admin-stats 2열 그리드로 정리 */
+  .admin-stats{padding:12px 16px;gap:8px;}
+  .admin-stat{min-width:calc(50% - 4px);padding:12px 16px;}
+  .admin-stat .num{font-size:22px;}
+  /* 관리자 헤더/테이블 여백 축소 */
+  .admin-header{padding:14px 16px;}
+  .admin-header h2{font-size:17px;}
+  .admin-table-wrap{padding:0 16px 24px;}
+}
+
+/* ② landscape(가로) 모드 전용 — 세로 500px 이하 */
+@media(max-height:500px) and (orientation:landscape){
+  body{overflow:auto;align-items:flex-start;padding:8px env(safe-area-inset-right) 8px env(safe-area-inset-left);min-height:100vh;}
+  .hero-frame{width:calc(100% - 24px);height:auto;max-height:none;border-radius:16px;margin:0 auto;}
+  .hero-content{margin:8px 0;padding:0 12px;animation:none;}
+  .hero-title{font-size:24px !important;letter-spacing:-0.5px;margin-bottom:8px;}
+  .hero-sub{font-size:12px;margin-bottom:8px;line-height:1.5;}
+  .hero-badge{margin-bottom:10px;padding:4px 12px;font-size:11px;}
+  .content{padding:12px 20px 12px;}
+  .logo-bar img{height:28px;}
+  .card-preview{height:110px;}
+  .card-body{padding:10px 14px 8px;}
+  .card-title{font-size:14px;}
+  .card-desc{font-size:11px;margin-bottom:6px;}
+  .footer{padding-top:8px;font-size:10px;}
 }
 </style>
 </head>

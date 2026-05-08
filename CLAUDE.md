@@ -81,11 +81,26 @@
   - **현재 미배포**: Google Cloud 조직 정책이 Cloud Functions 배포/서비스 계정 키 생성 차단
   - `functions/` 디렉토리에 코드 준비 완료, 조직 정책 완화 시 배포 가능
 
-## 관리자 비밀번호 초기화 도구 (v=20260416)
-- **`_reset-user-pw.js`**: PowerShell에서 `node _reset-user-pw.js [사원번호]` 실행
-- Firebase CLI 인증 토큰을 읽어서 Identity Platform REST API로 직접 비밀번호 변경
-- 이메일 링크 불필요, 1시간 만료 문제 없음
-- **사전 조건**: `firebase login` 완료 상태여야 함
+## 관리자 비밀번호 초기화 도구 (v=20260508 통합 도구 추가)
+- **`_user-admin.js` (권장 — 통합 도구)**: 사원번호 신고 3분 처리
+  - `node _user-admin.js find <사원번호>` — 모든 등록 계정 검색 (중복 즉시 발견)
+  - `node _user-admin.js reset <사원번호> --auto` — 최근 접속 계정 자동 임시 비번
+  - `node _user-admin.js reset <사원번호> --email <이메일> --pw "<비번>"` — 명시 이메일/비번
+  - `node _user-admin.js cleanup <사원번호> --keep <메인이메일>` — 중복 계정 영구 정리
+  - `node _user-admin.js fix-lookup <사원번호> --to <이메일>` — employee_lookup 정정
+- **`_reset-user-pw.js` (응급 fallback)**: 사원번호 기반
+- **`_reset-user-pw-by-email.js` (응급 fallback)**: 이메일 기반 + 사용자 지정 비번 옵션
+- **운영 매뉴얼**: [ADMIN-SOP.md](./ADMIN-SOP.md) — 신고 접수 → 처리 → SMS 표준 절차
+- **사전 조건**: `firebase login` 완료 (만료 시 `firebase login --reauth`)
+- 모두 `.vercelignore`의 `_*.js` 패턴으로 프로덕션 배포 제외
+
+## 시스템 결함 4건 영구 fix (v=20260508)
+- **결함 1**: 회원가입 시 사원번호 중복 검증 추가 (`employee_lookup.exists` 차단)
+- **결함 2**: `doPwChange`가 `auth.currentUser.email` 직접 사용 (lookup 의존 제거)
+- **결함 3**: `doPwReset` 3-way 매칭 (사원번호 + 이름 + 이메일) — 잘못된 계정 발송 차단
+- **결함 4**: 로그인 화면 "변경" 링크 제거 + "재설정" 단일 라벨 / 로그인 후 헤더에 "변경" 버튼 / 모달 안내 부제 강화
+- **배경**: 2026-05-07 최은주(2536085) 케이스에서 시스템 결함 4건 발견 → 트리플 체크 A+B 통과 후 영구 fix
+- **잔여 P2**: Firestore 보안규칙 race condition 방지 (별도 작업) / FEATURE_TEMP_PASSWORD 분기 정리 (Flag 비활성 상태)
 
 ## ⚠️ Google Cloud 조직 정책 제약 (v=20260416)
 - 조직 정책 `iam.disableServiceAccountKeyCreation` 적용 중

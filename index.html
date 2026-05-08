@@ -389,9 +389,7 @@ body{font-family:'Pretendard',sans-serif;background:#000;color:#e2e8f0;overflow:
       <button class="auth-btn" id="loginBtn" onclick="doLogin()">로그인</button>
       <div class="auth-toggle">계정이 없으신가요? <a onclick="toggleAuthForm('signup')">회원가입</a></div>
       <div class="auth-sublinks">
-        <a onclick="openPwChangeModal()"><i class="fas fa-key"></i> 비밀번호 변경</a>
-        <span class="auth-sublinks-sep">|</span>
-        <a onclick="openPwResetModal()"><i class="fas fa-unlock"></i> 비밀번호 분실</a>
+        <a onclick="openPwResetModal()"><i class="fas fa-unlock"></i> 비밀번호 재설정 (잊으셨나요?)</a>
       </div>
     </div>
     <!-- 회원가입 폼 -->
@@ -485,6 +483,7 @@ body{font-family:'Pretendard',sans-serif;background:#000;color:#e2e8f0;overflow:
       <div class="logo-actions">
         <div class="logo-actions-row">
           <button class="logo-action-btn admin-btn" id="adminOpenBtn" onclick="openAdmin()"><i class="fas fa-shield-halved"></i>&nbsp; 관리자</button>
+          <button class="logo-action-btn" id="pwChangeBtnHeader" onclick="openPwChangeModal()" style="display:none;"><i class="fas fa-key"></i>&nbsp; 비밀번호 변경</button>
           <button class="logo-action-btn" id="logoutBtn" onclick="doLogout()"><i class="fas fa-right-from-bracket"></i>&nbsp; 로그아웃</button>
         </div>
         <button class="logo-action-btn helpdesk-btn" id="helpdeskBtn" onclick="window.open('https://gemini.google.com/gem/1ujGMGS3M6CdPOxkFOiWdwplpgAduUXOy?usp=sharing','_blank')"><i class="fas fa-headset"></i>&nbsp; AI 활용 헬프 데스크</button>
@@ -701,9 +700,11 @@ function showScreen(screenId) {
   var logoutBtn = document.getElementById('logoutBtn');
   var adminBtn = document.getElementById('adminOpenBtn');
   var helpdeskBtn = document.getElementById('helpdeskBtn');
+  var pwChangeBtn = document.getElementById('pwChangeBtnHeader');
   if (logoutBtn) logoutBtn.style.display = (screenId === 'heroFrame') ? 'block' : 'none';
   if (helpdeskBtn) helpdeskBtn.style.display = (screenId === 'heroFrame') ? 'block' : 'none';
   if (adminBtn) adminBtn.style.display = 'none';
+  if (pwChangeBtn) pwChangeBtn.style.display = (screenId === 'heroFrame') ? 'block' : 'none';
 }
 
 /* ── 로그인/회원가입 폼 전환 ── */
@@ -757,7 +758,11 @@ function doSignup() {
 
   var isAdmin = ADMIN_EMAILS.indexOf(email.toLowerCase()) !== -1;
 
-  auth.createUserWithEmailAndPassword(email, pw).then(function(cred) {
+  // 사원번호 중복 검증 — 동일 사원번호 다중 계정 silent 등록 차단
+  db.collection('employee_lookup').doc(empNo).get().then(function(lookupDoc) {
+    if (lookupDoc.exists) throw new Error('DUPLICATE_EMP_NO');
+    return auth.createUserWithEmailAndPassword(email, pw);
+  }).then(function(cred) {
     // users 문서 + employee_lookup 문서 동시 생성
     var batch = db.batch();
     var userRef = db.collection('users').doc(cred.user.uid);
@@ -784,7 +789,11 @@ function doSignup() {
   }).then(function() {
     if (!isAdmin) sendAdminSignupAlert(name, empNo, email, phone);
   }).catch(function(err) {
-    showError('signupError', getAuthErrorMsg(err.code));
+    if (err && err.message === 'DUPLICATE_EMP_NO') {
+      showError('signupError', '이미 등록된 사원번호입니다. 비밀번호를 잊으셨다면 [비밀번호 재설정] 메뉴를 이용해 주세요.');
+    } else {
+      showError('signupError', getAuthErrorMsg(err.code));
+    }
     btn.disabled = false;
     btn.textContent = '회원가입';
   });
@@ -835,13 +844,14 @@ function doLogin() {
 
 /* ── 비밀번호 변경 모달 ── */
 function openPwChangeModal() {
-  var empNo = (document.getElementById('loginEmpNo').value || '').trim();
+  // 로그인 후 currentUser 기준 — 로그인된 계정 이메일 표시 (사원번호 의존 제거)
+  var user = auth.currentUser;
   var label = document.getElementById('pwChangeEmpNoLabel');
-  if (empNo) {
-    label.textContent = empNo;
+  if (user && user.email) {
+    label.textContent = user.email;
     label.style.color = '';
   } else {
-    label.textContent = '(로그인 화면에서 사원번호를 먼저 입력하세요)';
+    label.textContent = '(로그인 후 사용 가능)';
     label.style.color = '#fbbf24';
   }
   ['pwCurrentInput','pwNewInput','pwNewConfirmInput'].forEach(function(id) {
@@ -879,12 +889,10 @@ function _showPwChangeError(msg) {
   document.getElementById('pwChangeSuccess').style.display = 'none';
 }
 function doPwChange() {
-  var empNo = (document.getElementById('loginEmpNo').value || '').trim();
   var cur = document.getElementById('pwCurrentInput').value;
   var nw = document.getElementById('pwNewInput').value;
   var nc = document.getElementById('pwNewConfirmInput').value;
 
-  if (!empNo) return _showPwChangeError('로그인 화면에서 사원번호를 먼저 입력한 뒤 다시 시도해 주세요.');
   if (!cur) return _showPwChangeError('현재 비밀번호를 입력해 주세요.');
   if (!nw || nw.length < 6) return _showPwChangeError('새 비밀번호는 6자 이상이어야 합니다.');
   if (nw !== nc) return _showPwChangeError('새 비밀번호가 일치하지 않습니다.');
@@ -893,17 +901,14 @@ function doPwChange() {
   var btn = document.getElementById('pwChangeBtn');
   btn.disabled = true; btn.textContent = '변경 중...';
 
-  // employee_lookup/{empNo} 에서 email 조회 → reauthenticate → updatePassword → signOut
-  db.collection('employee_lookup').doc(empNo).get()
-    .then(function(doc) {
-      if (!doc.exists) throw { code: 'auth/user-not-found' };
-      var email = doc.data().email;
-      if (!email) throw { code: 'auth/user-not-found' };
-      var user = auth.currentUser;
-      if (!user) throw { code: 'auth/user-not-found' };
-      var credential = firebase.auth.EmailAuthProvider.credential(email, cur);
-      return user.reauthenticateWithCredential(credential);
-    })
+  // currentUser.email 직접 사용 → reauthenticate → updatePassword → signOut
+  // employee_lookup 의존 제거 (lookup이 stale/wrong이어도 정상 작동)
+  Promise.resolve().then(function() {
+    var user = auth.currentUser;
+    if (!user || !user.email) throw { code: 'auth/no-current-user' };
+    var credential = firebase.auth.EmailAuthProvider.credential(user.email, cur);
+    return user.reauthenticateWithCredential(credential);
+  })
     .then(function(cred) { return cred.user.updatePassword(nw); })
     .then(function() {
       // 임시비밀번호 강제변경 플래그 해제
@@ -923,8 +928,8 @@ function doPwChange() {
     })
     .catch(function(err) {
       var code = err && err.code;
-      if (code === 'auth/user-not-found') {
-        _showPwChangeError('등록된 사원번호를 찾을 수 없습니다. 관리자에게 문의해 주세요.');
+      if (code === 'auth/no-current-user') {
+        _showPwChangeError('로그인 후 다시 시도해 주세요. 비밀번호를 잊으셨다면 로그아웃 화면의 [비밀번호 재설정]을 이용해 주세요.');
       } else {
         _showPwChangeError(getAuthErrorMsg(code));
       }
@@ -936,6 +941,7 @@ function doPwChange() {
 function openPwResetModal() {
   document.getElementById('pwResetEmpNo').value = '';
   document.getElementById('pwResetName').value = '';
+  document.getElementById('pwResetEmail').value = '';
   document.getElementById('pwResetError').style.display = 'none';
   document.getElementById('pwResetSuccess').style.display = 'none';
   var btn = document.getElementById('pwResetBtn');
@@ -953,9 +959,11 @@ function _showPwResetError(msg) {
 function doPwReset() {
   var empNo = (document.getElementById('pwResetEmpNo').value || '').trim();
   var name = (document.getElementById('pwResetName').value || '').trim();
+  var email = (document.getElementById('pwResetEmail').value || '').trim().toLowerCase();
 
   if (!empNo) return _showPwResetError('사원번호를 입력해 주세요.');
   if (!name) return _showPwResetError('등록된 이름을 입력해 주세요.');
+  if (!email) return _showPwResetError('등록된 이메일을 입력해 주세요.');
 
   var btn = document.getElementById('pwResetBtn');
   btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 확인 중...';
@@ -965,7 +973,7 @@ function doPwReset() {
     fetch('https://us-central1-pro-enterprise-ai.cloudfunctions.net/resetPassword', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ empNo: empNo, name: name })
+      body: JSON.stringify({ empNo: empNo, name: name, email: email })
     })
     .then(function(resp) {
       if (!resp.ok) return resp.json().then(function(d) { throw d; });
@@ -985,7 +993,7 @@ function doPwReset() {
       btn.innerHTML = '<i class="fas fa-user-check"></i> 본인 확인';
     });
   } else {
-    // ── 기존 Firebase 링크 방식 ──
+    // ── 기존 Firebase 링크 방식 (3-way 매칭: 사원번호 + 이름 + 이메일) ──
     db.collection('employee_lookup').doc(empNo).get()
       .then(function(doc) {
         if (!doc.exists) throw { code: 'auth/user-not-found' };
@@ -994,20 +1002,23 @@ function doPwReset() {
           throw { code: 'auth/user-not-found' };
         }
         if (!data.email) throw { code: 'auth/user-not-found' };
-        return auth.sendPasswordResetEmail(data.email);
+        if ((data.email || '').toLowerCase() !== email) {
+          throw { code: 'auth/user-not-found' };
+        }
+        return auth.sendPasswordResetEmail(email);
       })
       .then(function() {
         var succ = document.getElementById('pwResetSuccess');
-        succ.innerHTML = '등록된 이메일로 비밀번호 재설정 링크를 발송했습니다.<br><span style="font-size:11px;color:#fbbf24;">⚠ 링크는 1시간 내에 사용해 주세요.</span>';
+        succ.innerHTML = '입력하신 이메일로 비밀번호 재설정 링크를 발송했습니다.<br><span style="font-size:11px;color:#fbbf24;">⚠ 링크는 1시간 내에 사용해 주세요. 메일이 안 오면 광고메일함을 확인하거나 관리자에게 문의해 주세요.</span>';
         succ.style.display = 'block';
         document.getElementById('pwResetError').style.display = 'none';
         btn.innerHTML = '<i class="fas fa-check"></i> 발송 완료';
-        setTimeout(closePwResetModal, 2800);
+        setTimeout(closePwResetModal, 3500);
       })
       .catch(function(err) {
         var code = err && err.code;
         if (code === 'auth/user-not-found') {
-          _showPwResetError('등록된 정보와 일치하지 않습니다. 사원번호와 이름을 다시 확인해 주세요.');
+          _showPwResetError('입력하신 정보가 일치하지 않습니다. 사원번호 / 이름 / 이메일을 다시 확인해 주세요.');
         } else {
           _showPwResetError(getAuthErrorMsg(code));
         }
@@ -1100,9 +1111,11 @@ function showLandingButtons(show, isAdmin) {
   var logoutBtn = document.getElementById('logoutBtn');
   var adminBtn = document.getElementById('adminOpenBtn');
   var helpdeskBtn = document.getElementById('helpdeskBtn');
+  var pwChangeBtn = document.getElementById('pwChangeBtnHeader');
   if (logoutBtn) logoutBtn.style.display = show ? 'block' : 'none';
   if (helpdeskBtn) helpdeskBtn.style.display = show ? 'block' : 'none';
   if (adminBtn) adminBtn.style.display = (show && isAdmin) ? 'block' : 'none';
+  if (pwChangeBtn) pwChangeBtn.style.display = show ? 'block' : 'none';
 }
 
 /* ── 스플래시 숨기기 ── */
@@ -1646,8 +1659,12 @@ if('serviceWorker' in navigator){
 <div class="pw-modal-overlay" id="pwChangeModal">
   <div class="pw-modal change">
     <div class="pw-modal-icon"><i class="fas fa-shield-halved"></i></div>
-    <div class="pw-modal-title">비밀번호 변경</div>
-    <div class="pw-modal-subtitle">사원번호: <b id="pwChangeEmpNoLabel">-</b></div>
+    <div class="pw-modal-title">비밀번호 변경 (현재 비밀번호로 인증)</div>
+    <div class="pw-modal-subtitle">계정: <b id="pwChangeEmpNoLabel">-</b></div>
+    <div class="pw-modal-desc" style="background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.25);border-radius:8px;padding:10px 12px;margin:8px 0 10px;text-align:left;font-size:12px;color:#cbd5e1;">
+      💡 현재 비밀번호를 알고 계신 경우에만 사용 가능합니다.<br>
+      <span style="color:#94a3b8;">잊으셨다면 로그아웃 후 [비밀번호 재설정]을 이용해 주세요.</span>
+    </div>
     <div class="pw-modal-error" id="pwChangeError"></div>
     <div class="pw-modal-success" id="pwChangeSuccess"></div>
     <label>현재 비밀번호</label>
@@ -1665,18 +1682,23 @@ if('serviceWorker' in navigator){
   </div>
 </div>
 
-<!-- ═══ 비밀번호 분실(초기화) 모달 ═══ -->
+<!-- ═══ 비밀번호 재설정 모달 ═══ -->
 <div class="pw-modal-overlay" id="pwResetModal">
   <div class="pw-modal reset">
     <div class="pw-modal-icon"><i class="fas fa-unlock"></i></div>
-    <div class="pw-modal-title">비밀번호 초기화</div>
-    <div class="pw-modal-desc">본인 확인을 위해<br><b>사번</b>과 <b>등록된 이름</b>을 정확히 입력해 주세요.</div>
+    <div class="pw-modal-title">비밀번호 재설정</div>
+    <div class="pw-modal-desc" style="background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.25);border-radius:8px;padding:10px 12px;margin-bottom:10px;text-align:left;">
+      💡 <b>이런 경우 사용</b>: 비밀번호를 잊었거나, 여러 번 입력해도 안 맞을 때<br>
+      <span style="font-size:11px;color:#cbd5e1;">사원번호 + 이름 + 이메일 3개가 모두 일치해야 발송됩니다.</span>
+    </div>
     <div class="pw-modal-error" id="pwResetError"></div>
     <div class="pw-modal-success" id="pwResetSuccess"></div>
     <label><i class="fas fa-id-card"></i> 사원번호</label>
     <input type="text" id="pwResetEmpNo" placeholder="등록된 사원번호 입력" autocomplete="off">
     <label><i class="fas fa-user"></i> 등록된 이름 (본인 확인)</label>
     <input type="text" id="pwResetName" placeholder="시스템에 등록된 본인 이름" autocomplete="off">
+    <label><i class="fas fa-envelope"></i> 등록된 이메일 (본인 확인)</label>
+    <input type="email" id="pwResetEmail" placeholder="가입 시 사용한 이메일" autocomplete="off">
     <div class="pw-modal-btns">
       <button class="pw-modal-btn cancel" onclick="closePwResetModal()">취소</button>
       <button class="pw-modal-btn confirm" id="pwResetBtn" onclick="doPwReset()"><i class="fas fa-user-check"></i> 본인 확인</button>

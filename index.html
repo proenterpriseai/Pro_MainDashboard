@@ -269,6 +269,8 @@ body{font-family:'Pretendard',sans-serif;background:#000;color:#e2e8f0;overflow:
 .logo-action-btn:hover{background:rgba(255,255,255,0.08);color:#fff;}
 .logo-action-btn.admin-btn{border-color:rgba(96,144,255,0.3);color:#6090ff;}
 .logo-action-btn.helpdesk-btn{border-color:rgba(34,197,94,0.3);color:#22c55e;}
+.btn-label-full{display:inline;}
+.btn-label-mobile{display:none;}
 
 /* ── 반응형 ── */
 @media(max-width:1000px){
@@ -290,9 +292,13 @@ body{font-family:'Pretendard',sans-serif;background:#000;color:#e2e8f0;overflow:
 
   /* ── 모바일 최적화 1차 패치 (v=20260418a) ── */
   /* ① 관리자/로그아웃/헬프데스크 버튼 줄바꿈 방지 + 터치 영역 확보 */
-  .logo-action-btn{padding:8px 12px;font-size:11.5px;white-space:nowrap;min-height:40px;display:inline-flex;align-items:center;justify-content:center;}
-  .logo-actions{gap:6px;}
-  .logo-actions-row{gap:6px;}
+  .logo-action-btn{padding:8px 8px;font-size:11.5px;white-space:nowrap;min-height:40px;display:inline-flex;align-items:center;justify-content:center;}
+  /* ①-b 4버튼 2x2 grid (v=20260523a) — 라벨 단축 + horizontal padding 12→8 + 로고 22px로 360px 폭에서 우측 짤림 방지 */
+  .logo-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+  .logo-actions-row{display:contents;}
+  .btn-label-full{display:none;}
+  .btn-label-mobile{display:inline;}
+  .logo-bar img{height:22px;}
   /* ③ 히어로 배지 ↔ 헬프데스크 heroFloat 겹침 방지 */
   .hero-content{animation:none;margin-top:10px;padding:0 12px;}
   .hero-badge{margin-bottom:16px;font-size:12px;padding:5px 14px;}
@@ -482,11 +488,11 @@ body{font-family:'Pretendard',sans-serif;background:#000;color:#e2e8f0;overflow:
       <img src="logo.png" alt="Pro Enterprise AI">
       <div class="logo-actions">
         <div class="logo-actions-row">
-          <button class="logo-action-btn admin-btn" id="adminOpenBtn" onclick="openAdmin()"><i class="fas fa-shield-halved"></i>&nbsp; 관리자</button>
-          <button class="logo-action-btn" id="pwChangeBtnHeader" onclick="openPwChangeModal()" style="display:none;"><i class="fas fa-key"></i>&nbsp; 비밀번호 변경</button>
-          <button class="logo-action-btn" id="logoutBtn" onclick="doLogout()"><i class="fas fa-right-from-bracket"></i>&nbsp; 로그아웃</button>
+          <button class="logo-action-btn admin-btn" id="adminOpenBtn" onclick="openAdmin()"><i class="fas fa-shield-halved"></i>&nbsp; <span class="btn-label-full">관리자</span><span class="btn-label-mobile">관리자</span></button>
+          <button class="logo-action-btn" id="pwChangeBtnHeader" onclick="openPwChangeModal()" style="display:none;"><i class="fas fa-key"></i>&nbsp; <span class="btn-label-full">비밀번호 변경</span><span class="btn-label-mobile">비번변경</span></button>
+          <button class="logo-action-btn" id="logoutBtn" onclick="doLogout()"><i class="fas fa-right-from-bracket"></i>&nbsp; <span class="btn-label-full">로그아웃</span><span class="btn-label-mobile">로그아웃</span></button>
         </div>
-        <button class="logo-action-btn helpdesk-btn" id="helpdeskBtn" onclick="window.open('https://gemini.google.com/gem/1ujGMGS3M6CdPOxkFOiWdwplpgAduUXOy?usp=sharing','_blank')"><i class="fas fa-headset"></i>&nbsp; AI 활용 헬프 데스크</button>
+        <button class="logo-action-btn helpdesk-btn" id="helpdeskBtn" onclick="window.open('https://gemini.google.com/gem/1ujGMGS3M6CdPOxkFOiWdwplpgAduUXOy?usp=sharing','_blank')"><i class="fas fa-headset"></i>&nbsp; <span class="btn-label-full">AI 활용 헬프 데스크</span><span class="btn-label-mobile">헬프데스크</span></button>
       </div>
     </div>
 

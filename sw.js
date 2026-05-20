@@ -1,4 +1,4 @@
-var CACHE_NAME = 'pro-ai-v9';
+var CACHE_NAME = 'pro-ai-v10';
 var urlsToCache = [
   '/',
   '/index.html',

@@ -114,7 +114,7 @@
 2. 코드 수정 시 반드시 push/배포까지 완료
 - **커밋 시**: Co-Authored-By 태그 필수
 
-## 모바일 최적화 규칙 (v=20260418a/b/c)
+## 모바일 최적화 규칙 (v=20260418a/b/c → v=20260523a 헤더 2x2 grid 보강)
 - **격리 전략**: 모든 모바일 스타일은 `@media(max-width:640px)` 블록에 격리. 데스크톱 UX 불변 필수
 - **터치 영역**: 버튼/링크 최소 `min-height: 36~44px` (Apple HIG / Google Material 가이드)
 - **iOS Safari 16px 룰**: 입력창 `font-size:16px` 미만이면 포커스 시 자동 줌 발동 → 모든 input 16px 고정
@@ -124,7 +124,8 @@
 - **landscape 전용**: `@media(max-height:500px) and (orientation:landscape)` 별도 블록 — `body{align-items:flex-start}` 필수 (hero 상단 클립 방지)
 - **관리자 테이블 → 카드형**: `data-label` 속성 + `td::before{content:attr(data-label)}` 패턴. thead는 `position:absolute;top:-9999px`
 - **접근성**: Three.js Aurora는 `prefers-reduced-motion` 존중 — reduce 설정 시 정적 프레임 1회만 렌더
-- **SW 캐시 bump**: 모바일 CSS 수정 시 반드시 `CACHE_NAME` 버전업 (현재 `pro-ai-v9`)
+- **SW 캐시 bump**: 모바일 CSS 수정 시 반드시 `CACHE_NAME` 버전업 (현재 `pro-ai-v10`, v=20260523a 헤더 2x2 grid 작업에서 bump)
+- **헤더 4버튼 2x2 grid (v=20260523a, commit c89f738)**: 모바일에서 `.logo-actions` grid 2x2 + `.logo-actions-row{display:contents}` 트릭으로 HTML 구조 보존 + 라벨 단축(비밀번호 변경→비번변경, AI 활용 헬프 데스크→헬프데스크). 360px viewport overflow -5px → safety +16px 검증 완료
 
 ## Open Graph 링크 미리보기 (v=20260418)
 - `og-image.png` (1200×630, 배경 `#28398C`, `logo.png` 중앙 합성 — Python PIL로 생성)

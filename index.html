@@ -492,7 +492,7 @@ body{font-family:'Pretendard',sans-serif;background:#000;color:#e2e8f0;overflow:
           <button class="logo-action-btn" id="pwChangeBtnHeader" onclick="openPwChangeModal()" style="display:none;"><i class="fas fa-key"></i>&nbsp; <span class="btn-label-full">비밀번호 변경</span><span class="btn-label-mobile">비번변경</span></button>
           <button class="logo-action-btn" id="logoutBtn" onclick="doLogout()"><i class="fas fa-right-from-bracket"></i>&nbsp; <span class="btn-label-full">로그아웃</span><span class="btn-label-mobile">로그아웃</span></button>
         </div>
-        <button class="logo-action-btn helpdesk-btn" id="helpdeskBtn" onclick="window.open('https://gemini.google.com/gem/1ujGMGS3M6CdPOxkFOiWdwplpgAduUXOy?usp=sharing','_blank')"><i class="fas fa-headset"></i>&nbsp; <span class="btn-label-full">AI 활용 헬프 데스크</span><span class="btn-label-mobile">헬프데스크</span></button>
+        <button class="logo-action-btn helpdesk-btn" id="helpdeskBtn" onclick="_trackOpen('AI 활용 헬프데스크','https://gemini.google.com/gem/1ujGMGS3M6CdPOxkFOiWdwplpgAduUXOy?usp=sharing')"><i class="fas fa-headset"></i>&nbsp; <span class="btn-label-full">AI 활용 헬프 데스크</span><span class="btn-label-mobile">헬프데스크</span></button>
       </div>
     </div>
 
@@ -510,7 +510,7 @@ body{font-family:'Pretendard',sans-serif;background:#000;color:#e2e8f0;overflow:
         <div class="carousel-track" id="carouselTrack">
 
           <!-- 카드 1: 보장분석 리포트 -->
-          <div class="tool-card glow-target" onclick="window.open('https://pro-insuranceanalysis.com','_blank')">
+          <div class="tool-card glow-target" onclick="_trackOpen('보장분석 리포트','https://pro-insuranceanalysis.com')">
             <div class="glow-border"></div>
             <div class="card-preview">
               <img class="preview-img" src="preview-analysis.webp" alt="보장분석" loading="lazy">
@@ -527,7 +527,7 @@ body{font-family:'Pretendard',sans-serif;background:#000;color:#e2e8f0;overflow:
           </div>
 
           <!-- 카드 2: DB 영업관리 -->
-          <div class="tool-card glow-target" onclick="window.open('https://pro-salessystem.com','_blank')">
+          <div class="tool-card glow-target" onclick="_trackOpen('DB 영업관리','https://pro-salessystem.com')">
             <div class="glow-border"></div>
             <div class="card-preview">
               <img class="preview-img" src="preview-sales.webp" alt="DB영업관리" loading="lazy">
@@ -544,7 +544,7 @@ body{font-family:'Pretendard',sans-serif;background:#000;color:#e2e8f0;overflow:
           </div>
 
           <!-- 카드 3: 통합 계산기 -->
-          <div class="tool-card glow-target" onclick="window.open('https://pro-financecalculator.vercel.app/','_blank')">
+          <div class="tool-card glow-target" onclick="_trackOpen('통합 금융 계산기','https://pro-financecalculator.vercel.app/')">
             <div class="glow-border"></div>
             <div class="card-preview">
               <img class="preview-img" src="preview-calculator.webp" alt="통합계산기" loading="lazy">
@@ -561,7 +561,7 @@ body{font-family:'Pretendard',sans-serif;background:#000;color:#e2e8f0;overflow:
           </div>
 
           <!-- 카드 4: 금융 & 보험 코치 -->
-          <div class="tool-card glow-target" onclick="window.open('https://gemini.google.com/gem/1vUjZNt7m7jLAxJ3ICOv5tI4WIqssmX0H?usp=sharing','_blank')">
+          <div class="tool-card glow-target" onclick="_trackOpen('금융 & 보험 코치','https://gemini.google.com/gem/1vUjZNt7m7jLAxJ3ICOv5tI4WIqssmX0H?usp=sharing')">
             <div class="glow-border"></div>
             <div class="card-preview">
               <img class="preview-img" src="preview-coach.webp" alt="금융코치" loading="lazy">
@@ -578,7 +578,7 @@ body{font-family:'Pretendard',sans-serif;background:#000;color:#e2e8f0;overflow:
           </div>
 
           <!-- 카드 5: 민원 분쟁조정 전문가 -->
-          <div class="tool-card glow-target" onclick="window.open('https://gemini.google.com/gem/1jcmQ743PuN10BT_N88nAuPnESu4mWH_D?usp=sharing','_blank')">
+          <div class="tool-card glow-target" onclick="_trackOpen('민원 분쟁조정 전문가','https://gemini.google.com/gem/1jcmQ743PuN10BT_N88nAuPnESu4mWH_D?usp=sharing')">
             <div class="glow-border"></div>
             <div class="card-preview">
               <img class="preview-img" src="preview-dispute.webp" alt="민원전문가" loading="lazy">
@@ -595,7 +595,7 @@ body{font-family:'Pretendard',sans-serif;background:#000;color:#e2e8f0;overflow:
           </div>
 
           <!-- 카드 6: 예상 보험금 수령 산출 전문가 -->
-          <div class="tool-card glow-target" onclick="window.open('https://gemini.google.com/gem/15CfHW2qR7KKsa2KvSoJutvykQ3Rr_RjT?usp=sharing','_blank')">
+          <div class="tool-card glow-target" onclick="_trackOpen('예상 보험금 산출 전문가','https://gemini.google.com/gem/15CfHW2qR7KKsa2KvSoJutvykQ3Rr_RjT?usp=sharing')">
             <div class="glow-border"></div>
             <div class="card-preview">
               <img class="preview-img" src="preview-insurance.webp" alt="보험금산출" loading="lazy">
@@ -612,7 +612,7 @@ body{font-family:'Pretendard',sans-serif;background:#000;color:#e2e8f0;overflow:
           </div>
 
           <!-- 카드 7: 건강검진 AI 전문가 -->
-          <div class="tool-card glow-target" onclick="window.open('https://gemini.google.com/gem/1fAoSklWuFuuvrnNkojfuo7t-ltPL00VX?usp=sharing','_blank')">
+          <div class="tool-card glow-target" onclick="_trackOpen('건강검진 AI 전문가','https://gemini.google.com/gem/1fAoSklWuFuuvrnNkojfuo7t-ltPL00VX?usp=sharing')">
             <div class="glow-border"></div>
             <div class="card-preview">
               <img class="preview-img" src="preview-health.webp" alt="건강검진AI" loading="lazy">
@@ -1133,6 +1133,19 @@ function hideSplash() {
   }
 }
 
+/* ── GA4 시스템 카드 클릭 추적 + 새 탭 열기 ── */
+function _trackOpen(systemName, url) {
+  try {
+    if (typeof gtag === 'function') {
+      gtag('event', 'system_open', {
+        system: systemName,
+        employee_no: window._gaEmpNo || ''
+      });
+    }
+  } catch (e) { /* 추적 실패해도 카드 클릭은 정상 동작 */ }
+  window.open(url, '_blank');
+}
+
 /* ── Auth 상태 감지 (핵심 라우터) ── */
 auth.onAuthStateChanged(function(user) {
   if (!user) {
@@ -1193,6 +1206,7 @@ auth.onAuthStateChanged(function(user) {
     if (deviceOk) {
       showScreen('heroFrame');
       // ── GA4 사용자 식별 (사원번호 추적용) ──
+      window._gaEmpNo = data.employeeNo || '';
       if (typeof gtag === 'function') {
         gtag('config', 'G-NV114K1SQY', { user_id: user.uid });
         gtag('set', 'user_properties', { employee_no: data.employeeNo || '' });

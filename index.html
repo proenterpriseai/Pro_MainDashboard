@@ -1192,6 +1192,12 @@ auth.onAuthStateChanged(function(user) {
     var deviceOk = checkAndRegisterDevice(doc);
     if (deviceOk) {
       showScreen('heroFrame');
+      // ── GA4 사용자 식별 (사원번호 추적용) ──
+      if (typeof gtag === 'function') {
+        gtag('config', 'G-NV114K1SQY', { user_id: user.uid });
+        gtag('set', 'user_properties', { employee_no: data.employeeNo || '' });
+        gtag('event', 'login', { method: 'approval_gate', employee_no: data.employeeNo || '' });
+      }
       var isAdmin = data.role === 'admin';
       showLandingButtons(true, isAdmin);
       if (isAdmin && sessionStorage.getItem('adminDashboardOpen') === 'true') {

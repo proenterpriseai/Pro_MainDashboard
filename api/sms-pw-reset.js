@@ -307,7 +307,13 @@ module.exports = async function handler(req, res) {
     }
     res.status(400).json({ ok: false, code: 'BAD_ACTION' });
   } catch (err) {
-    console.error('[sms-pw-reset] 오류:', err && err.message);
+    const msg = (err && err.message) || '';
+    console.error('[sms-pw-reset] 오류:', msg);
+    // 권한 토큰 만료(invalid_rapt 등)·서버 설정 누락 → 클라이언트가 이메일 방식으로 자동 전환하도록 구분 응답
+    if (msg.indexOf('ACCESS_TOKEN_FAIL') !== -1 || msg.indexOf('SERVER_CONFIG') !== -1) {
+      res.status(200).json({ ok: false, code: 'SMS_UNAVAILABLE' });
+      return;
+    }
     res.status(500).json({ ok: false, code: 'SERVER_ERROR' });
   }
 };

@@ -81,6 +81,20 @@
   - **현재 미배포**: Google Cloud 조직 정책이 Cloud Functions 배포/서비스 계정 키 생성 차단
   - `functions/` 디렉토리에 코드 준비 완료, 조직 정책 완화 시 배포 가능
 
+## SMS 인증 비밀번호 재설정 (v=20260610, FEATURE_SMS_PW_RESET=false 검증 단계)
+- **목적**: 이메일 링크 방식의 두 약점(스팸함 분류 + 1시간/1회용 링크 실패 시 전체 반복) 제거 — 로그인 화면에서 완결
+- **플로우**: 재설정 클릭 → 사원번호+이름 → 등록 휴대폰으로 인증번호 SMS → 같은 모달에서 OTP+새 비번 입력 → 즉시 변경
+- **서버**: `api/sms-pw-reset.js` (Vercel Serverless, action=request/confirm)
+  - 본인확인: employee_lookup displayName 매칭 + **lookup uid 정확 매칭만** (중복계정 오변경 차단)
+  - OTP: 6자리, sha256 해시 저장(pepper=SOLAPI_SECRET), 5분 만료, 검증 5회(낙관적 잠금 직렬화), 발송 일 5회+60초 쿨다운
+  - 방어: Origin 화이트리스트(pro-dashboards.com + pro-main-dashboard*.vercel.app) / 발송대상=users.phone만
+  - OTP 문서 `pw_reset_otps/{empNo}` — Firestore 엄격 규칙 catch-all(if false)로 클라 차단, 서버만 접근
+- **환경변수** (전부 Sensitive): `SOLAPI_API_KEY`/`SOLAPI_API_SECRET`/`SMS_SENDER_PHONE`(01047337148)/`FIREBASE_ADMIN_REFRESH_TOKEN`
+- **⚠️ 토큰 수명 이슈**: 회사 계정 토큰은 조직 재인증 정책으로 주기 만료(`invalid_rapt`) → 만료 시 서버가 `SMS_UNAVAILABLE` 응답 → **클라이언트가 기존 이메일 방식으로 자동 전환**(무중단). 복구=`npx firebase-tools login --reauth` 후 새 토큰 Vercel 재등록. 영구 해결(서비스계정) 검토 중 — 조직 도메인 제한이 외부 주체 추가 차단(gmail 직접 추가 실패 확인)
+- **클라이언트**: `openPwResetModal()` Flag 게이트 + 독립 `smsPwModal`/`_smsPw*` 블록. 휴대폰 미등록(`NO_PHONE`)도 이메일 자동 fallback. 기존 doPwReset 무수정
+- **검증(2026-06-10)**: Preview 실측 — 문자 수신→OTP→변경→pro-dashboards.com 새 비번 로그인 성공. 129명 전원 phone+lookup 보유(이메일 fallback 대상 0명). 솔라피 발신번호 010-4733-7148(개인 명의, **인증 만료 2026-12-10 — 재인증 필요**)
+- **flip 전 체크리스트**: ① Vercel Firewall `/api/*` 레이트리밋 ② 토큰 영구화 또는 재인증 운영 룰 확정 ③ 대표님 명시 승인
+
 ## 관리자 비밀번호 초기화 도구 (v=20260508 통합 도구 추가)
 - **`_user-admin.js` (권장 — 통합 도구)**: 사원번호 신고 3분 처리
   - `node _user-admin.js find <사원번호>` — 모든 등록 계정 검색 (중복 즉시 발견)

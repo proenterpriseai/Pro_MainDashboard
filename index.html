@@ -1783,7 +1783,7 @@ if('serviceWorker' in navigator){
    서버: /api/sms-pw-reset (Vercel Serverless)
    Flag=false 시 기존 이메일 링크 방식 그대로 (영향 0)
    ═══════════════════════════════════════ */
-var FEATURE_SMS_PW_RESET = false; // true 전환은 대표님 명시 승인 후에만. 옵트인: sessionStorage._flag_sms_pw_reset='true'
+var FEATURE_SMS_PW_RESET = true; // 700명 공개 (대표님 명시 승인 2026-06-10). 비활성 테스트: sessionStorage._flag_sms_pw_reset='false'
 
 function _isSmsPwResetOn() {
   try {

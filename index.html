@@ -945,6 +945,12 @@ function doPwChange() {
 
 /* ── 비밀번호 분실(초기화) 모달 ── */
 function openPwResetModal() {
+  /* FEATURE_SMS_PW_RESET 게이트 — Flag=on 시 SMS 인증 방식 모달로 대체 (기존 이메일 방식은 fallback 보존) */
+  if (typeof _isSmsPwResetOn === 'function' && _isSmsPwResetOn() && !window._smsPwForceEmail) {
+    _smsPwOpenModal();
+    return;
+  }
+  window._smsPwForceEmail = false;
   document.getElementById('pwResetEmpNo').value = '';
   document.getElementById('pwResetName').value = '';
   document.getElementById('pwResetEmail').value = '';
@@ -1731,6 +1737,194 @@ if('serviceWorker' in navigator){
     </div>
   </div>
 </div>
+
+<!-- ═══ SMS 비밀번호 재설정 모달 (FEATURE_SMS_PW_RESET, 독립 블록) ═══ -->
+<div class="pw-modal-overlay" id="smsPwModal">
+  <div class="pw-modal reset">
+    <div class="pw-modal-icon"><i class="fas fa-mobile-alt"></i></div>
+    <div class="pw-modal-title">비밀번호 재설정</div>
+    <div class="pw-modal-desc" style="background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.25);border-radius:8px;padding:10px 12px;margin-bottom:10px;text-align:left;">
+      💡 <b>이런 경우 사용</b>: 비밀번호를 잊었거나, 여러 번 입력해도 안 맞을 때<br>
+      <span style="font-size:11px;color:#cbd5e1;">사원번호와 이름이 일치하면 <b>가입 시 등록한 휴대폰</b>으로 인증번호 문자가 발송됩니다.<br>이메일 확인 없이 이 화면에서 바로 새 비밀번호를 설정할 수 있습니다.</span>
+    </div>
+    <div class="pw-modal-error" id="smsPwError"></div>
+    <div class="pw-modal-success" id="smsPwSuccess"></div>
+    <div id="smsPwStep1">
+      <label><i class="fas fa-id-card"></i> 사원번호</label>
+      <input type="text" id="smsPwEmpNo" placeholder="등록된 사원번호 입력" inputmode="numeric" autocomplete="off">
+      <label><i class="fas fa-user"></i> 등록된 이름 (본인 확인)</label>
+      <input type="text" id="smsPwName" placeholder="시스템에 등록된 본인 이름" autocomplete="off">
+      <div class="pw-modal-btns">
+        <button class="pw-modal-btn cancel" onclick="closeSmsPwModal()">취소</button>
+        <button class="pw-modal-btn confirm" id="smsPwSendBtn" onclick="smsPwRequest()"><i class="fas fa-paper-plane"></i> 인증번호 받기</button>
+      </div>
+    </div>
+    <div id="smsPwStep2" style="display:none;">
+      <label><i class="fas fa-key"></i> 인증번호 (6자리)</label>
+      <input type="text" id="smsPwOtp" placeholder="문자로 받은 인증번호 6자리" inputmode="numeric" maxlength="6" autocomplete="one-time-code">
+      <label><i class="fas fa-lock"></i> 새 비밀번호 (6자 이상)</label>
+      <input type="password" id="smsPwNew" placeholder="새 비밀번호" autocomplete="new-password">
+      <label><i class="fas fa-lock"></i> 새 비밀번호 확인</label>
+      <input type="password" id="smsPwNew2" placeholder="새 비밀번호 다시 입력" autocomplete="new-password">
+      <div class="pw-modal-btns">
+        <button class="pw-modal-btn cancel" id="smsPwResendBtn" onclick="smsPwResend()"><i class="fas fa-redo"></i> 재발송</button>
+        <button class="pw-modal-btn confirm" id="smsPwConfirmBtn" onclick="smsPwConfirm()"><i class="fas fa-check"></i> 비밀번호 변경</button>
+      </div>
+      <div class="pw-modal-btns" style="margin-top:6px;">
+        <button class="pw-modal-btn cancel" onclick="closeSmsPwModal()" style="flex:1;">취소</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════
+   FEATURE_SMS_PW_RESET — SMS 인증 비밀번호 재설정 (독립 블록)
+   서버: /api/sms-pw-reset (Vercel Serverless)
+   Flag=false 시 기존 이메일 링크 방식 그대로 (영향 0)
+   ═══════════════════════════════════════ */
+var FEATURE_SMS_PW_RESET = false; // true 전환은 대표님 명시 승인 후에만. 옵트인: sessionStorage._flag_sms_pw_reset='true'
+
+function _isSmsPwResetOn() {
+  try {
+    var o = sessionStorage.getItem('_flag_sms_pw_reset');
+    if (o === 'true') return true;
+    if (o === 'false') return false;
+  } catch (_) { /* sessionStorage 차단 환경 → Flag 기본값 */ }
+  return FEATURE_SMS_PW_RESET;
+}
+
+var _smsPwState = { empNo: '', name: '' };
+
+function _smsPwShowError(msg) {
+  var el = document.getElementById('smsPwError');
+  el.textContent = msg; el.style.display = 'block';
+  document.getElementById('smsPwSuccess').style.display = 'none';
+}
+function _smsPwShowSuccess(html) {
+  var el = document.getElementById('smsPwSuccess');
+  el.innerHTML = html; el.style.display = 'block';
+  document.getElementById('smsPwError').style.display = 'none';
+}
+function _smsPwHideMsgs() {
+  document.getElementById('smsPwError').style.display = 'none';
+  document.getElementById('smsPwSuccess').style.display = 'none';
+}
+function _smsPwSetStep(step) {
+  document.getElementById('smsPwStep1').style.display = (step === 1) ? '' : 'none';
+  document.getElementById('smsPwStep2').style.display = (step === 2) ? '' : 'none';
+}
+function _smsPwBtn(id, disabled, html) {
+  var btn = document.getElementById(id);
+  btn.disabled = disabled; btn.innerHTML = html;
+}
+
+function _smsPwOpenModal() {
+  _smsPwState = { empNo: '', name: '' };
+  document.getElementById('smsPwEmpNo').value = '';
+  document.getElementById('smsPwName').value = '';
+  document.getElementById('smsPwOtp').value = '';
+  document.getElementById('smsPwNew').value = '';
+  document.getElementById('smsPwNew2').value = '';
+  _smsPwHideMsgs();
+  _smsPwSetStep(1);
+  _smsPwBtn('smsPwSendBtn', false, '<i class="fas fa-paper-plane"></i> 인증번호 받기');
+  _smsPwBtn('smsPwConfirmBtn', false, '<i class="fas fa-check"></i> 비밀번호 변경');
+  document.getElementById('smsPwModal').classList.add('show');
+}
+function closeSmsPwModal() {
+  document.getElementById('smsPwModal').classList.remove('show');
+}
+
+function _smsPwApi(payload) {
+  return fetch('/api/sms-pw-reset', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  }).then(function (r) { return r.json(); });
+}
+
+function _smsPwErrorMsg(data) {
+  var code = (data && data.code) || '';
+  if (code === 'NO_MATCH') return '입력하신 정보가 일치하지 않습니다. 사원번호 / 이름을 다시 확인해 주세요.';
+  if (code === 'COOLDOWN') return '잠시 후 다시 시도해 주세요. (재발송 대기 ' + (data.wait || 60) + '초)';
+  if (code === 'DAILY_LIMIT') return '오늘 인증번호 발송 한도(5회)를 초과했습니다. 내일 다시 시도하시거나 관리자에게 문의해 주세요.';
+  if (code === 'OTP_INVALID') return '인증번호가 일치하지 않습니다.' + (data.remaining > 0 ? ' (남은 시도 ' + data.remaining + '회)' : '');
+  if (code === 'OTP_EXPIRED') return '인증번호가 만료되었습니다. [재발송]을 눌러 새 인증번호를 받아주세요.';
+  if (code === 'OTP_LOCKED') return '시도 횟수를 초과했습니다. [재발송]으로 새 인증번호를 받아 다시 시도해 주세요.';
+  if (code === 'OTP_BUSY') return '처리 중입니다. 잠시 후 다시 시도해 주세요.';
+  if (code === 'NO_REQUEST') return '인증번호 요청 정보가 없습니다. 처음부터 다시 시도해 주세요.';
+  if (code === 'WEAK_PASSWORD') return '비밀번호는 6자 이상이어야 합니다.';
+  return '오류가 발생했습니다. 잠시 후 다시 시도해 주세요.';
+}
+
+function _smsPwSend(isResend) {
+  var empNo = _smsPwState.empNo;
+  var name = _smsPwState.name;
+  if (!isResend) {
+    empNo = (document.getElementById('smsPwEmpNo').value || '').trim();
+    name = (document.getElementById('smsPwName').value || '').trim();
+    if (!empNo) return _smsPwShowError('사원번호를 입력해 주세요.');
+    if (!name) return _smsPwShowError('등록된 이름을 입력해 주세요.');
+  }
+  var btnId = isResend ? 'smsPwResendBtn' : 'smsPwSendBtn';
+  var btnHtml = isResend ? '<i class="fas fa-redo"></i> 재발송' : '<i class="fas fa-paper-plane"></i> 인증번호 받기';
+  _smsPwBtn(btnId, true, '<i class="fas fa-spinner fa-spin"></i> 발송 중...');
+  _smsPwApi({ action: 'request', empNo: empNo, name: name })
+    .then(function (data) {
+      _smsPwBtn(btnId, false, btnHtml);
+      if (data.ok) {
+        _smsPwState = { empNo: empNo, name: name };
+        _smsPwSetStep(2);
+        _smsPwShowSuccess('인증번호를 <b>' + (data.maskedPhone || '등록된 휴대폰') + '</b>(으)로 발송했습니다.<br><span style="font-size:11px;color:#fbbf24;">⚠ 5분 내에 입력해 주세요. 문자가 안 오면 [재발송]을 눌러주세요.</span>');
+        return;
+      }
+      if (data.code === 'NO_PHONE') {
+        /* 휴대폰 미등록 사용자 → 기존 이메일 방식 fallback */
+        _smsPwShowError('등록된 휴대폰 번호가 없어 이메일 방식으로 진행합니다...');
+        setTimeout(function () {
+          window._smsPwForceEmail = true;
+          closeSmsPwModal();
+          openPwResetModal();
+        }, 1500);
+        return;
+      }
+      _smsPwShowError(_smsPwErrorMsg(data));
+    })
+    .catch(function () {
+      _smsPwBtn(btnId, false, btnHtml);
+      _smsPwShowError('네트워크 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
+    });
+}
+
+function smsPwRequest() { _smsPwSend(false); }
+function smsPwResend() { _smsPwSend(true); }
+
+function smsPwConfirm() {
+  var otp = (document.getElementById('smsPwOtp').value || '').trim();
+  var pw1 = document.getElementById('smsPwNew').value;
+  var pw2 = document.getElementById('smsPwNew2').value;
+  if (!/^[0-9]{6}$/.test(otp)) return _smsPwShowError('인증번호 6자리를 정확히 입력해 주세요.');
+  if (!pw1 || pw1.length < 6) return _smsPwShowError('새 비밀번호는 6자 이상이어야 합니다.');
+  if (pw1 !== pw2) return _smsPwShowError('새 비밀번호가 서로 일치하지 않습니다.');
+  _smsPwBtn('smsPwConfirmBtn', true, '<i class="fas fa-spinner fa-spin"></i> 변경 중...');
+  _smsPwApi({ action: 'confirm', empNo: _smsPwState.empNo, otp: otp, newPassword: pw1 })
+    .then(function (data) {
+      if (data.ok) {
+        _smsPwBtn('smsPwConfirmBtn', true, '<i class="fas fa-check"></i> 변경 완료');
+        _smsPwShowSuccess('✅ 비밀번호가 변경되었습니다.<br><span style="font-size:11px;color:#cbd5e1;">새 비밀번호로 바로 로그인해 주세요.</span>');
+        setTimeout(closeSmsPwModal, 3000);
+        return;
+      }
+      _smsPwBtn('smsPwConfirmBtn', false, '<i class="fas fa-check"></i> 비밀번호 변경');
+      _smsPwShowError(_smsPwErrorMsg(data));
+    })
+    .catch(function () {
+      _smsPwBtn('smsPwConfirmBtn', false, '<i class="fas fa-check"></i> 비밀번호 변경');
+      _smsPwShowError('네트워크 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
+    });
+}
+</script>
 
 <script defer src="/_vercel/insights/script.js"></script>
 </body>

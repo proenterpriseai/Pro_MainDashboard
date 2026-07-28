@@ -403,7 +403,7 @@ body{font-family:'Pretendard',sans-serif;background:#000;color:#e2e8f0;overflow:
       <div class="auth-title">회원가입</div>
       <div class="auth-subtitle">관리자 승인 후 서비스를 이용하실 수 있습니다</div>
       <div class="auth-error" id="signupError"></div>
-      <input class="auth-input" type="text" id="signupEmpNo" placeholder="사원번호" autocomplete="username">
+      <input class="auth-input" type="text" id="signupEmpNo" placeholder="사원번호 (7자리 숫자)" inputmode="numeric" maxlength="7" autocomplete="username" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
       <input class="auth-input" type="text" id="signupName" placeholder="이름 (실명)" autocomplete="name">
       <input class="auth-input" type="tel" id="signupPhone" placeholder="핸드폰 번호 (숫자만 입력)" inputmode="numeric" autocomplete="tel" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
       <input class="auth-input" type="email" id="signupEmail" placeholder="이메일 주소" autocomplete="email">
@@ -752,6 +752,7 @@ function doSignup() {
   var pwc = document.getElementById('signupPwConfirm').value;
 
   if (!empNo) return showError('signupError', '사원번호를 입력해 주세요.');
+  if (!/^\d{7}$/.test(empNo)) return showError('signupError', '사원번호는 7자리 숫자입니다. 다시 확인해 주세요.');
   if (!name) return showError('signupError', '이름을 입력해 주세요.');
   if (!phone || phone.length < 10 || phone.length > 11) return showError('signupError', '핸드폰 번호를 정확히 입력해 주세요.');
   if (!email) return showError('signupError', '이메일을 입력해 주세요.');
@@ -827,13 +828,10 @@ function doLogin() {
     localStorage.removeItem('saved_emp_no');
   }
 
-  auth.signInWithEmailAndPassword(email, pw).then(function() {
-    // 로그인 성공 시 사원번호 업데이트 (변경된 경우 반영)
-    var user = auth.currentUser;
-    if (user) {
-      db.collection('users').doc(user.uid).update({ employeeNo: empNo });
-    }
-  }).catch(function(err) {
+  // 사원번호는 가입 시 확정값 — 로그인 입력으로 users.employeeNo를 갱신하지 않는다.
+  // (2026-07-28: 오타 입력이 조용히 덮어써 employee_lookup 키와 불일치 → 비밀번호 재설정
+  //  영구 실패. 실제 2건 발생. 사번 정정은 관리자가 Firestore/스크립트로 별도 처리.)
+  auth.signInWithEmailAndPassword(email, pw).catch(function(err) {
     var msg = getAuthErrorMsg(err.code);
     showError('loginError', msg);
     // 비밀번호 관련 오류 시 대소문자 힌트 추가
@@ -1171,10 +1169,15 @@ auth.onAuthStateChanged(function(user) {
     if (!doc.exists) {
       // 문서 없음 (직접 Firebase에서 생성된 경우)
       var isAdmin = ADMIN_EMAILS.indexOf(user.email.toLowerCase()) !== -1;
+      // 신규 생성 시에만 로그인 입력 사번을 초기값으로 채운다(7자리 형식만 허용).
+      // 기존 문서를 덮어쓰는 것이 아니므로 오염 위험 없음. 형식 미달이면 빈 값 유지.
+      var _seedEmpNoEl = document.getElementById('loginEmpNo');
+      var _seedEmpNo = _seedEmpNoEl ? _seedEmpNoEl.value.trim() : '';
+      if (!/^\d{7}$/.test(_seedEmpNo)) _seedEmpNo = '';
       return userRef.set({
         uid: user.uid,
         email: user.email.toLowerCase(),
-        employeeNo: '',
+        employeeNo: _seedEmpNo,
         displayName: user.displayName || user.email.split('@')[0],
         phone: '',
         role: isAdmin ? 'admin' : 'user',

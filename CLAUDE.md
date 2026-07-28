@@ -41,7 +41,7 @@
 - Firebase 다운 시: 오프라인 대응 없음 (Auth 실패 → 접근 불가)
 
 ## Service Worker 캐시 (sw.js)
-- `CACHE_NAME = 'pro-ai-v5'` — 수동 버전 관리
+- `CACHE_NAME = 'pro-ai-v13'` — 수동 버전 관리 (수정 시 이 값도 함께 갱신)
 - Firebase/Google API: 네트워크 전용 (캐시 안 함)
 - 기타: 네트워크 우선 + 캐시 fallback
 - **캐시 갱신**: `CACHE_NAME` 버전 올려야 기존 사용자에게 반영
@@ -67,7 +67,7 @@
 - `employee_lookup` 컬렉션: { uid, email, displayName } — 비로그인 상태 공개 읽기 (PII 최소화)
 - 회원가입(doSignup) 시 batch.set으로 users + employee_lookup 동시 생성
 - 기존 사용자 백필: `_backfill-employee-lookup.js` (관리자 Console에서 1회 실행 완료)
-- **기존 함수 무수정**: doLogin, doSignup, toggleAuthForm, doLogout 등 원본 그대로
+- **기존 함수 최소 수정 이력**: toggleAuthForm, doLogout 등은 원본 그대로. doLogin/doSignup은 2026-07-28 사번 정합성 fix에서 사전승인 하에 수정됨(아래 "사원번호 정책" 참조)
 
 ## Caps Lock 감지 + 대소문자 경고 (v=20260416)
 - 비밀번호 필드 3곳에 Caps Lock 실시간 경고: `#loginPw`, `#pwCurrentInput`, `#pwNewInput`
@@ -81,7 +81,7 @@
   - **현재 미배포**: Google Cloud 조직 정책이 Cloud Functions 배포/서비스 계정 키 생성 차단
   - `functions/` 디렉토리에 코드 준비 완료, 조직 정책 완화 시 배포 가능
 
-## SMS 인증 비밀번호 재설정 (v=20260610, FEATURE_SMS_PW_RESET=false 검증 단계)
+## SMS 인증 비밀번호 재설정 (v=20260610, **FEATURE_SMS_PW_RESET=true 700명 공개** — 대표님 승인 2026-06-10, commit 2f6169e)
 - **목적**: 이메일 링크 방식의 두 약점(스팸함 분류 + 1시간/1회용 링크 실패 시 전체 반복) 제거 — 로그인 화면에서 완결
 - **플로우**: 재설정 클릭 → 사원번호+이름 → 등록 휴대폰으로 인증번호 SMS → 같은 모달에서 OTP+새 비번 입력 → 즉시 변경
 - **서버**: `api/sms-pw-reset.js` (Vercel Serverless, action=request/confirm)
@@ -102,11 +102,26 @@
   - `node _user-admin.js reset <사원번호> --email <이메일> --pw "<비번>"` — 명시 이메일/비번
   - `node _user-admin.js cleanup <사원번호> --keep <메인이메일>` — 중복 계정 영구 정리
   - `node _user-admin.js fix-lookup <사원번호> --to <이메일>` — employee_lookup 정정
+  - `node _user-admin.js change-email <사원번호> --to <새이메일> [--from <기존이메일>]` — 이메일 교정(Auth+users+lookup 3곳 동시, 삭제/재가입 없이 uid·승인·이력 보존)
 - **`_reset-user-pw.js` (응급 fallback)**: 사원번호 기반
 - **`_reset-user-pw-by-email.js` (응급 fallback)**: 이메일 기반 + 사용자 지정 비번 옵션
 - **운영 매뉴얼**: [ADMIN-SOP.md](./ADMIN-SOP.md) — 신고 접수 → 처리 → SMS 표준 절차
 - **사전 조건**: `firebase login` 완료 (만료 시 `firebase login --reauth`)
 - 모두 `.vercelignore`의 `_*.js` 패턴으로 프로덕션 배포 제외
+
+## 🔑 사원번호(employeeNo) 정책 — 사번 정합성 fix (v=20260728)
+> **⛔ 이 정책을 되돌리지 말 것.** 되돌리면 비밀번호 재설정이 조용히 영구 실패하는 사고가 재발합니다.
+
+- **사번은 7자리 숫자**(사내 규칙). 회사 전 계정 156명 실측 100% 7자리 — 검증 도입 시 회귀 0 확인.
+- **사번은 가입 시 확정값. 로그인 입력으로 절대 갱신하지 않는다.**
+  - 구 코드(`doLogin`)는 로그인 성공 후 `users.employeeNo`를 **입력값으로 무검증 덮어쓰기** → 인증은 email+password로만 하므로 사번 오타도 로그인 성공 → `employee_lookup` 문서 ID와 불일치 → **비밀번호 재설정 영구 실패**. 실제 피해 2건(이준훈 2630008, 오선준 2635669).
+  - `saved_emp_no`(사번 저장 체크박스, 기본 ON)가 오타를 localStorage에 고착시켜 재발을 가속.
+  - → **덮어쓰기 제거**. 사번 정정은 관리자가 Firestore/스크립트로 처리.
+- **`doSignup` 7자리 검증**: `if (!/^\d{7}$/.test(empNo))` → "사원번호는 7자리 숫자입니다". 가입 폼 입력창도 `inputmode="numeric" maxlength="7"` + 숫자만 필터(핸드폰 필드와 동일 패턴).
+- **users 문서 신규 생성 fallback**(`onAuthStateChanged`, 문서 미존재 시): 로그인 입력 사번을 **7자리일 때만** 초기값으로 채움. 덮어쓰기가 아니라 생성이므로 오염 위험 없음. (구 코드는 `''` 고정 → 덮어쓰기 제거 후 `''` 영구 고착 위험이 생겨 함께 보완. `''`이면 `_user-admin.js find`가 계정을 찾지 못함.)
+- ⚠️ **자릿수 검증만으로는 7자리끼리의 자리 전치 오타를 못 잡는다**(오선준 2635699↔2635669). 그건 덮어쓰기 제거로만 방어됨 → 둘은 세트.
+- ℹ️ 서버(`api/sms-pw-reset.js`)의 입력 sanitize는 `^[0-9]{4,10}$`로 더 관대함(차단 아님, 무해). 통일은 별도 P2.
+- **잔여 P2**: ①사번 변경 전용 관리자 명령(`change-empno`) 미구현 — 정당한 사번 변경 시 lookup 문서 ID 이관 필요(현재 수동) ②`employeeNo` 빈 값/불일치 정기 감사 ③사번 검증을 순수 함수로 분리해 `tests/unit-tests.js`에 회귀 테스트 추가.
 
 ## 시스템 결함 4건 영구 fix (v=20260508)
 - **결함 1**: 회원가입 시 사원번호 중복 검증 추가 (`employee_lookup.exists` 차단)

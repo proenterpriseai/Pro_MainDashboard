@@ -1,5 +1,20 @@
 # Pro Enterprise AI 메인 대시보드
 
+## 🟢 현재 LIVE (이 줄을 배포마다 갱신)
+| 항목 | 값 |
+|---|---|
+| **버전** | **v=20260728** (사번 정합성 fix) |
+| **main 커밋** | `825753d` (+ `331a5f6` change-email 도구) |
+| **SW 캐시** | `pro-ai-v13` (sw.js) |
+| **배포** | GitHub `proenterpriseai/Pro_MainDashboard` → Vercel `pro-dashboards.com` (push 시 자동, ~30초) |
+| **활성 Flag** | `FEATURE_SMS_PW_RESET=true`(700명 공개) / `FEATURE_TEMP_PASSWORD=false`(미배포·조직정책 차단) |
+| **사용자 규모** | users 156건 / employee_lookup 151건 (2026-07-28 실측) |
+
+- 2026-07-28 `v=20260728` — **사번 정합성 fix**: doLogin 사번 덮어쓰기 제거 + doSignup 7자리 검증 + 신규생성 seed 보완 + CACHE v13. ⛔되돌림 금지 → 아래 "사원번호 정책" 참조.
+- 2026-06-10 `FEATURE_SMS_PW_RESET=true` 700명 공개 (commit `2f6169e`).
+- 2026-05-23 `v=20260523a` 모바일 헤더 2x2 grid (commit `c89f738`).
+- 2026-05-08 `v=20260508` 시스템 결함 4건 영구 fix (사원번호 중복검증 등).
+
 ## 프로젝트 개요
 7대 핵심 AI 시스템의 통합 허브. Firebase Auth 기반 로그인 + PWA 지원.
 700명+ 보험설계사 사용 중인 프로덕션 시스템.

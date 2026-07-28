@@ -4,7 +4,7 @@
 | 항목 | 값 |
 |---|---|
 | **버전** | **v=20260728** (사번 정합성 fix) |
-| **main 커밋** | `825753d` (+ `331a5f6` change-email 도구) |
+| **코드 커밋** | `825753d` (사번 fix) / `331a5f6` (change-email 도구) — 이후 docs 커밋은 LIVE 동작 무변경 |
 | **SW 캐시** | `pro-ai-v13` (sw.js) |
 | **배포** | GitHub `proenterpriseai/Pro_MainDashboard` → Vercel `pro-dashboards.com` (push 시 자동, ~30초) |
 | **활성 Flag** | `FEATURE_SMS_PW_RESET=true`(700명 공개) / `FEATURE_TEMP_PASSWORD=false`(미배포·조직정책 차단) |

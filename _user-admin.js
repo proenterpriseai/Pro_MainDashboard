@@ -8,6 +8,7 @@
  *   node _user-admin.js reset <사원번호> --email <이메일> --auto
  *   node _user-admin.js cleanup <사원번호> --keep <메인이메일>
  *   node _user-admin.js fix-lookup <사원번호> --to <이메일>
+ *   node _user-admin.js change-email <사원번호> --to <새이메일> [--from <기존이메일>]
  *
  * 사전 조건: firebase login 완료 상태
  * 의존: 표준 노드 모듈만 사용 (npm 의존 0)
@@ -236,6 +237,27 @@ async function updateAuthPassword(accessToken, uid, newPassword) {
   if (resp.status !== 200) throw new Error('비밀번호 변경 실패: ' + JSON.stringify(resp.data));
 }
 
+// Identity Toolkit: 이메일 변경 (로그인 신원)
+async function updateAuthEmail(accessToken, uid, newEmail) {
+  const body = JSON.stringify({ localId: uid, email: newEmail });
+  const resp = await request(`https://identitytoolkit.googleapis.com/v1/projects/${PROJECT_ID}/accounts:update`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' }
+  }, body);
+  if (resp.status !== 200) throw new Error('Firebase Auth 이메일 변경 실패: ' + JSON.stringify(resp.data));
+}
+
+// Firestore: users/{uid} email 필드 갱신
+async function updateUserEmail(accessToken, uid, newEmail) {
+  const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/users/${encodeURIComponent(uid)}?updateMask.fieldPaths=email`;
+  const body = JSON.stringify({ fields: { email: { stringValue: newEmail } } });
+  const resp = await request(url, {
+    method: 'PATCH',
+    headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' }
+  }, body);
+  if (resp.status !== 200) throw new Error('users 문서 email 갱신 실패: ' + JSON.stringify(resp.data));
+}
+
 // Identity Toolkit: 계정 삭제
 async function deleteAuthUser(accessToken, uid) {
   const body = JSON.stringify({ localId: uid });
@@ -447,6 +469,95 @@ async function cmdFixLookup(empNo, opts) {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// 명령: change-email  (기존 계정의 이메일을 새 주소로 교정 — 삭제/재가입 없이)
+// Firebase Auth(로그인 신원) + users/{uid}.email + employee_lookup/{empNo}.email 3곳 동시 갱신
+// ═══════════════════════════════════════════════════════════════
+
+async function cmdChangeEmail(empNo, opts) {
+  if (!opts.to) throw new Error('--to <새이메일>을 지정하세요.');
+  const newEmail = opts.to.trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
+    throw new Error('새 이메일 형식이 올바르지 않습니다: ' + newEmail);
+  }
+  const refreshToken = getRefreshToken();
+  const accessToken = await getAccessToken(refreshToken);
+
+  console.log(`\n📧 사원번호 ${empNo} 이메일 변경 중...\n`);
+
+  const users = await findUsersByEmpNo(accessToken, empNo);
+  if (users.length === 0) throw new Error('해당 사원번호로 등록된 계정이 없습니다.');
+
+  // 대상 계정 결정 (중복 가입이면 --from으로 명시 필수)
+  let target;
+  if (users.length > 1) {
+    if (!opts.from) {
+      throw new Error(`사원번호 ${empNo}에 계정 ${users.length}개 발견 — --from <기존이메일>로 대상을 지정하세요. (먼저 find로 확인)`);
+    }
+    target = users.find(u => u.email.toLowerCase() === opts.from.toLowerCase());
+    if (!target) throw new Error(`--from ${opts.from} 계정을 사원번호 ${empNo}에서 찾을 수 없습니다.`);
+  } else {
+    target = users[0];
+    if (opts.from && target.email.toLowerCase() !== opts.from.toLowerCase()) {
+      throw new Error(`--from ${opts.from}이 등록된 이메일(${target.email})과 다릅니다.`);
+    }
+  }
+
+  if (target.email.toLowerCase() === newEmail.toLowerCase()) {
+    throw new Error('새 이메일이 기존 이메일과 동일합니다: ' + target.email);
+  }
+
+  // 새 이메일이 다른 계정에서 이미 사용 중인지 검사 (Auth 충돌 사전 차단)
+  const existing = await lookupUserByEmail(accessToken, newEmail);
+  if (existing && existing.uid !== target.uid) {
+    throw new Error(`새 이메일 ${newEmail}은 이미 다른 계정(UID: ${existing.uid})에서 사용 중입니다.`);
+  }
+
+  // employee_lookup 정합성 확인
+  const lookup = await getEmployeeLookup(accessToken, empNo);
+  if (lookup && lookup.uid !== target.uid) {
+    console.log(`⚠️  employee_lookup이 다른 uid를 가리킴 (lookup=${lookup.uid} / 대상=${target.uid}) — 함께 정정합니다.`);
+  }
+
+  console.log('변경 요약:');
+  console.log('═'.repeat(50));
+  console.log(`  이름:       ${target.displayName || '(미입력)'}`);
+  console.log(`  사원번호:    ${empNo}`);
+  console.log(`  UID:        ${target.uid}`);
+  console.log(`  상태:       ${target.status || '(미기록)'}`);
+  console.log(`  기존 이메일:  ${target.email}`);
+  console.log(`  새 이메일:    ${newEmail}`);
+  console.log('═'.repeat(50));
+
+  const ans = await prompt('\n⚠️  Firebase Auth + users + employee_lookup 3곳의 이메일을 변경합니다. 진행하시겠습니까? (yes/no): ');
+  if (ans.trim().toLowerCase() !== 'yes') {
+    console.log('취소되었습니다.');
+    return;
+  }
+
+  // 1) Firebase Auth (로그인 신원 — 가장 중요, 먼저 처리)
+  await updateAuthEmail(accessToken, target.uid, newEmail);
+  console.log('  ✅ Firebase Auth 이메일 변경 완료');
+
+  // 2) users 문서 (관리자 화면/일관성)
+  await updateUserEmail(accessToken, target.uid, newEmail.toLowerCase());
+  console.log('  ✅ users 문서 email 갱신 완료');
+
+  // 3) employee_lookup (비밀번호 재설정 플로우용) — 기존 updateEmployeeLookup 재사용
+  await updateEmployeeLookup(accessToken, empNo, {
+    uid: target.uid,
+    email: newEmail.toLowerCase(),
+    displayName: (lookup && lookup.displayName) || target.displayName || ''
+  });
+  console.log('  ✅ employee_lookup email 갱신 완료');
+
+  console.log('\n✅ 이메일 변경 완료 (계정 uid·승인상태·이력 모두 보존)');
+  console.log('═'.repeat(50));
+  console.log(`  로그인 안내 → 사원번호: ${empNo} / 이메일: ${newEmail} / 비밀번호: 기존과 동일`);
+  console.log('═'.repeat(50));
+  console.log(`\n👉 비밀번호도 함께 재설정하려면:\n   node _user-admin.js reset ${empNo} --email ${newEmail} --pw "<원하는비번>"\n`);
+}
+
+// ═══════════════════════════════════════════════════════════════
 // CLI 디스패처
 // ═══════════════════════════════════════════════════════════════
 
@@ -459,6 +570,7 @@ function parseFlags(argv) {
     else if (a === '--pw') opts.pw = argv[++i];
     else if (a === '--keep') opts.keep = argv[++i];
     else if (a === '--to') opts.to = argv[++i];
+    else if (a === '--from') opts.from = argv[++i];
   }
   return opts;
 }
@@ -486,6 +598,11 @@ function printHelp() {
   node _user-admin.js fix-lookup <사원번호> --to <이메일>
       employee_lookup이 잘못된 계정을 가리킬 때 정정
 
+  node _user-admin.js change-email <사원번호> --to <새이메일> [--from <기존이메일>]
+      기존 계정의 이메일을 새 주소로 교정 (삭제/재가입 없이 uid·승인·이력 보존)
+      Firebase Auth + users + employee_lookup 3곳 동시 갱신
+      중복 가입 계정이면 --from으로 대상 명시 필수
+
 사전 조건: firebase login 완료 상태`);
 }
 
@@ -510,6 +627,7 @@ function printHelp() {
     else if (cmd === 'reset') await cmdReset(empNo, opts);
     else if (cmd === 'cleanup') await cmdCleanup(empNo, opts);
     else if (cmd === 'fix-lookup') await cmdFixLookup(empNo, opts);
+    else if (cmd === 'change-email') await cmdChangeEmail(empNo, opts);
     else {
       console.error(`❌ 알 수 없는 명령: ${cmd}`);
       printHelp();

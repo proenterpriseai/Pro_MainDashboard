@@ -3,13 +3,14 @@
 ## 🟢 현재 LIVE (이 줄을 배포마다 갱신)
 | 항목 | 값 |
 |---|---|
-| **버전** | **v=20260805a** (모바일 히어로 행간·줄바꿈) |
-| **코드 커밋** | `cbccf17` (모바일 히어로) / `825753d` (사번 fix) / `331a5f6` (change-email 도구) — 이후 docs 커밋은 LIVE 동작 무변경 |
-| **SW 캐시** | `pro-ai-v14` (sw.js) |
+| **버전** | **v=20260805b** (카드 설명 줄바꿈) |
+| **코드 커밋** | `<이번 배포>` (카드 설명) / `cbccf17` (모바일 히어로) / `825753d` (사번 fix) / `331a5f6` (change-email 도구) — 이후 docs 커밋은 LIVE 동작 무변경 |
+| **SW 캐시** | `pro-ai-v15` (sw.js) |
 | **배포** | GitHub `proenterpriseai/Pro_MainDashboard` → Vercel `pro-dashboards.com` (push 시 자동, ~30초) |
 | **활성 Flag** | `FEATURE_SMS_PW_RESET=true`(700명 공개) / `FEATURE_TEMP_PASSWORD=false`(미배포·조직정책 차단) |
 | **사용자 규모** | users 156건 / employee_lookup 151건 (2026-07-28 실측) |
 
+- 2026-08-05 `v=20260805b` — **카드 설명 어절 경계 줄바꿈** 5개(보장분석·DB영업·계산기·코치·민원). `.card-desc-br`(모바일 전용 `<br>`) + `.card-desc-keep{word-break:keep-all}`. ⛔**'예상 보험금 산출 전문가'·'건강검진' 2개는 현행 유지가 실장님 지시** → `keep-all`을 `.card-desc` 전체에 걸지 말 것. CACHE v14→v15.
 - 2026-08-05 `v=20260805a` (commit `cbccf17`) — 모바일 히어로 2건: ①**4구간 행간 균등화**(버튼블록→배지→타이틀→서브→카드 전부 시각 15.5~16px, `margin-top:16px`/`badge 11px`/`title 5px`/`sub 10px` **4개 세트**) ②서브 문장 줄바꿈 고정(`.hero-sub-br` 모바일 전용 `<br>` + `word-break:keep-all`). `sw.js` CACHE `pro-ai-v13→v14`. LIVE `pro-dashboards.com` 실측 확인(16/16/15.6/15.5), 데스크톱·가로모드 무변경.
 - 2026-07-28 `v=20260728` — **사번 정합성 fix**: doLogin 사번 덮어쓰기 제거 + doSignup 7자리 검증 + 신규생성 seed 보완 + CACHE v13. ⛔되돌림 금지 → 아래 "사원번호 정책" 참조.
 - 2026-06-10 `FEATURE_SMS_PW_RESET=true` 700명 공개 (commit `2f6169e`).
@@ -180,6 +181,7 @@
   - ⚠️ **박스값(margin)과 시각값이 다르다** — 폰트 잉크 여백 때문. margin 숫자만 보고 "안 맞았네" 판단 금지, 반드시 잉크 기준 실측.
   - 작업 전 실측: 16 / 21 / 26.6 / **5.5**(박스 0 — `carousel-wrapper`는 margin·padding 0이라 서브 문구가 카드에 붙어 있었음).
   - 카드·푸터 위치는 거의 불변(카드 상단 377.9→377.4px) — 총합을 유지하며 재분배했기 때문.
+- **카드 설명 줄바꿈 (v=20260805b)**: 5개 카드만 `<br class="card-desc-br">`(모바일 전용) + `.card-desc-keep{word-break:keep-all}`. ⛔예상보험금·건강검진 카드는 **현행 유지 지시** → `keep-all`을 `.card-desc` 전체에 걸면 지시 위반. ⚠️새 규칙은 **`@media(max-width:640px)` 블록**에 넣을 것 — 파일 뒤쪽 `landscape` 블록(`max-height:500px and orientation:landscape`)에 넣으면 **세로 모드에서 전혀 적용되지 않음**(2026-08-05 실제 실수)
 - **히어로 서브 문장 줄바꿈 (v=20260805a)**: `<br class="hero-sub-br">`가 모바일에서만 `display:inline` → "…통합 금융 계산기, / 전문 비서 챗봇까지." 2줄 고정. 데스크톱은 `display:none`으로 1줄 유지. ⚠️`<br>` **뒤에 공백 1칸 필수**(앞에 두면 데스크톱에서 "계산기,전문"으로 붙음). `word-break:keep-all`로 어절 중간 절단 방지 — 280px에서도 overflow 0 실측
 - **헤더 4버튼 2x2 grid (v=20260523a, commit c89f738)**: 모바일에서 `.logo-actions` grid 2x2 + `.logo-actions-row{display:contents}` 트릭으로 HTML 구조 보존 + 라벨 단축(비밀번호 변경→비번변경, AI 활용 헬프 데스크→헬프데스크). 360px viewport overflow -5px → safety +16px 검증 완료
 

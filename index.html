@@ -125,6 +125,8 @@ body{font-family:'Pretendard',sans-serif;background:#000;color:#e2e8f0;overflow:
 .card-title .arrow{position:absolute;right:-20px;top:50%;transform:translateY(-50%);font-size:11px;color:rgba(255,255,255,0.15);transition:all 0.35s;}
 .tool-card:hover .card-title .arrow{color:rgba(255,255,255,0.5);transform:translateY(-50%) translateX(3px);}
 .card-desc{font-size:12px;color:#fff;line-height:1.55;margin-bottom:10px;}
+/* 카드 설명 모바일 전용 줄바꿈 지점 (v=20260805b) — 데스크톱/태블릿은 자연 줄바꿈 유지 */
+.card-desc-br{display:none;}
 .card-tags{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;}
 .card-tags span{font-size:10px;padding:3px 9px;border-radius:50px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);letter-spacing:0.2px;}
 
@@ -365,6 +367,12 @@ body{font-family:'Pretendard',sans-serif;background:#000;color:#e2e8f0;overflow:
   .device-info .label{font-size:14px;}
   .device-info .date{font-size:12px;}
   .device-replace-btn{padding:10px 16px;font-size:13px;min-height:40px;flex-shrink:0;}
+
+  /* ── 카드 설명 어절 경계 줄바꿈 (v=20260805b) ── br 활성 + 해당 5개 카드만 어절 중간 절단 방지.
+     ⚠️ keep-all을 `.card-desc` 전체에 걸면 안 됨: '예상 보험금 산출 전문가' 카드는 현재 줄바꿈 유지가 실장님 지시(2026-08-05).
+     ⚠️ 이 두 줄은 반드시 이 블록(max-width:640px)에 있어야 함 — 아래 landscape 블록에 넣으면 세로 모드에서 미적용(2026-08-05 실수 이력) */
+  .card-desc-br{display:inline;}
+  .card-desc-keep{word-break:keep-all;}
 }
 
 /* ② landscape(가로) 모드 전용 — 세로 500px 이하 */
@@ -533,7 +541,7 @@ body{font-family:'Pretendard',sans-serif;background:#000;color:#e2e8f0;overflow:
             </div>
             <div class="card-body">
               <div class="card-title">보장 분석 리포트 <i class="fas fa-arrow-right arrow"></i></div>
-              <div class="card-desc">AI가 자동으로 보장을 분석하고 전문 리포트를 생성합니다.</div>
+              <div class="card-desc card-desc-keep">AI가 자동으로 보장을 분석하고<br class="card-desc-br"> 전문 리포트를 생성합니다.</div>
               <div class="card-tags"><span>AI 분석</span><span>자동화</span><span>9종 리포트</span></div>
             </div>
           </div>
@@ -550,7 +558,7 @@ body{font-family:'Pretendard',sans-serif;background:#000;color:#e2e8f0;overflow:
             </div>
             <div class="card-body">
               <div class="card-title">DB 영업관리 <i class="fas fa-arrow-right arrow"></i></div>
-              <div class="card-desc">고객 DB를 체계적으로 관리하고 영업 활동을 추적합니다.</div>
+              <div class="card-desc card-desc-keep">고객 DB를 체계적으로 관리하고<br class="card-desc-br"> 영업 활동을 추적합니다.</div>
               <div class="card-tags"><span>DB 관리</span><span>영업 추적</span><span>실시간 동기화</span></div>
             </div>
           </div>
@@ -567,7 +575,7 @@ body{font-family:'Pretendard',sans-serif;background:#000;color:#e2e8f0;overflow:
             </div>
             <div class="card-body">
               <div class="card-title">통합 금융 계산기 <i class="fas fa-arrow-right arrow"></i></div>
-              <div class="card-desc">모든 자산관리 분야를 실시간으로 계산합니다.</div>
+              <div class="card-desc card-desc-keep">모든 자산관리 분야를 실시간으로<br class="card-desc-br"> 계산합니다.</div>
               <div class="card-tags"><span>부동산</span><span>세금</span><span>목적 자금</span><span>달러</span><span>은퇴자금</span><span>대출 상환</span></div>
             </div>
           </div>
@@ -584,7 +592,7 @@ body{font-family:'Pretendard',sans-serif;background:#000;color:#e2e8f0;overflow:
             </div>
             <div class="card-body">
               <div class="card-title">금융 & 보험 코치 <i class="fas fa-arrow-right arrow"></i></div>
-              <div class="card-desc">AI 전문가가 금융·보험 상담을 실시간 코칭합니다.</div>
+              <div class="card-desc card-desc-keep">AI 전문가가 금융·보험 상담을<br class="card-desc-br"> 실시간 코칭합니다.</div>
               <div class="card-tags"><span>AI 코칭</span><span>실시간 상담</span><span>금융 전문</span></div>
             </div>
           </div>
@@ -601,7 +609,7 @@ body{font-family:'Pretendard',sans-serif;background:#000;color:#e2e8f0;overflow:
             </div>
             <div class="card-body">
               <div class="card-title">민원 분쟁조정 전문가 <i class="fas fa-arrow-right arrow"></i></div>
-              <div class="card-desc">보험 민원 및 분쟁조정 대응 전략을 제시합니다.</div>
+              <div class="card-desc card-desc-keep">보험 민원 및 분쟁조정 대응 전략을<br class="card-desc-br"> 제시합니다.</div>
               <div class="card-tags"><span>민원 대응</span><span>분쟁 조정</span><span>법률 전략</span></div>
             </div>
           </div>

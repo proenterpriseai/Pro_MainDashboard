@@ -86,6 +86,8 @@ body{font-family:'Pretendard',sans-serif;background:#000;color:#e2e8f0;overflow:
 .hero-title .t1{background:linear-gradient(to bottom,#fff,rgba(255,255,255,0.8));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
 .hero-title .t2{background:linear-gradient(to right,#93b4ff,rgba(255,255,255,0.9),#fca5b5);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
 .hero-sub{font-size:clamp(13px,1.2vw,16px);color:#fff;line-height:1.7;max-width:500px;margin:0 auto;}
+/* 서브 문장 모바일 전용 줄바꿈 지점 (v=20260805a) — 데스크톱은 1줄 유지 */
+.hero-sub-br{display:none;}
 
 /* ── 캐러셀 ── */
 .carousel-wrapper{position:relative;flex-shrink:0;margin-top:auto;padding:0 40px;}
@@ -300,8 +302,18 @@ body{font-family:'Pretendard',sans-serif;background:#000;color:#e2e8f0;overflow:
   .btn-label-mobile{display:inline;}
   .logo-bar img{height:22px;}
   /* ③ 히어로 배지 ↔ 헬프데스크 heroFloat 겹침 방지 */
-  .hero-content{animation:none;margin-top:10px;padding:0 12px;}
-  .hero-badge{margin-bottom:16px;font-size:12px;padding:5px 14px;}
+  .hero-content{animation:none;margin-top:16px;padding:0 12px;}
+  .hero-badge{margin-bottom:11px;font-size:12px;padding:5px 14px;}
+  /* ── 배지 상·하 행간 균등화 (v=20260805a) ──
+     버튼블록↔배지 = margin-top 16px(박스=시각), 배지↔타이틀 = 11px + 32px Pretendard 상단여백 5px = 시각 16px.
+     ⚠️ 두 값은 세트. 한쪽만 바꾸면 다시 어긋남 (실측 근거: 위 10 / 아래 21 → 16 / 16) */
+  /* 서브 문장 줄바꿈 고정 + 어절 중간 절단 방지 (v=20260805a) */
+  .hero-sub-br{display:inline;}
+  /* ── 타이틀 ↔ 서브 ↔ 카드 행간 균등화 (v=20260805a) ──
+     타이틀 margin-bottom 5px + 잉크보정 10.5px = 시각 15.5px / 서브 margin-bottom 10px + 잉크보정 5.6px = 시각 15.6px.
+     ⚠️ 두 값은 세트. 작업 전 실측: 위 26.6 / 아래 5.5(박스 0) → 15.5 / 15.6 (카드 위치 불변) */
+  .hero-title{margin-bottom:5px;}
+  .hero-sub{word-break:keep-all;margin-bottom:10px;}
   /* ⑥ 캐러셀 화살표 터치 영역 44px */
   .carousel-btn{width:44px;height:44px;}
   .auth-sublinks a{min-height:36px;padding:4px 6px;}
@@ -500,7 +512,7 @@ body{font-family:'Pretendard',sans-serif;background:#000;color:#e2e8f0;overflow:
     <div class="hero-content">
       <div class="hero-badge fade-up" style="animation-delay:0.3s;"><span class="bi">✦</span>AI-Powered Pro Sales Tools</div>
       <h1 class="hero-title fade-up" style="animation-delay:0.5s;"><span class="t1">프로사업단총괄을 위한</span><br><span class="t2">7대 핵심 AI 시스템</span></h1>
-      <p class="hero-sub fade-up" style="animation-delay:0.7s;">보장 분석부터 DB 영업관리, 통합 금융 계산기, 전문 비서 챗봇까지.</p>
+      <p class="hero-sub fade-up" style="animation-delay:0.7s;">보장 분석부터 DB 영업관리, 통합 금융 계산기,<br class="hero-sub-br"> 전문 비서 챗봇까지.</p>
     </div>
 
     <!-- 캐러셀 카드 -->

@@ -10,6 +10,7 @@
 | **활성 Flag** | `FEATURE_SMS_PW_RESET=true`(700명 공개) / `FEATURE_TEMP_PASSWORD=false`(미배포·조직정책 차단) |
 | **사용자 규모** | users 156건 / employee_lookup 151건 (2026-07-28 실측) |
 
+- 🔜 **배포 대기 `v=20260805a`** (2026-08-05 작업분, 커밋/push 전) — 모바일 히어로 2건: ①**4구간 행간 균등화**(버튼블록→배지→타이틀→서브→카드 전부 시각 15.5~16px, `margin-top:16px`/`badge 11px`/`title 5px`/`sub 10px` **4개 세트**) ②서브 문장 줄바꿈 고정(`.hero-sub-br` 모바일 전용 `<br>` + `word-break:keep-all`). `sw.js` CACHE `pro-ai-v13→v14`. 데스크톱/가로모드 무변경 실측 확인. → 배포 후 위 표 갱신할 것.
 - 2026-07-28 `v=20260728` — **사번 정합성 fix**: doLogin 사번 덮어쓰기 제거 + doSignup 7자리 검증 + 신규생성 seed 보완 + CACHE v13. ⛔되돌림 금지 → 아래 "사원번호 정책" 참조.
 - 2026-06-10 `FEATURE_SMS_PW_RESET=true` 700명 공개 (commit `2f6169e`).
 - 2026-05-23 `v=20260523a` 모바일 헤더 2x2 grid (commit `c89f738`).
@@ -168,7 +169,18 @@
 - **landscape 전용**: `@media(max-height:500px) and (orientation:landscape)` 별도 블록 — `body{align-items:flex-start}` 필수 (hero 상단 클립 방지)
 - **관리자 테이블 → 카드형**: `data-label` 속성 + `td::before{content:attr(data-label)}` 패턴. thead는 `position:absolute;top:-9999px`
 - **접근성**: Three.js Aurora는 `prefers-reduced-motion` 존중 — reduce 설정 시 정적 프레임 1회만 렌더
-- **SW 캐시 bump**: 모바일 CSS 수정 시 반드시 `CACHE_NAME` 버전업 (현재 `pro-ai-v10`, v=20260523a 헤더 2x2 grid 작업에서 bump)
+- **SW 캐시 bump**: 모바일 CSS 수정 시 반드시 `CACHE_NAME` 버전업 (**현재 값은 최상단 LIVE 표 참조** — 여기에 숫자를 적으면 드리프트가 반복됨)
+- **히어로 4구간 행간 균등 (v=20260805a)** — 모바일 히어로는 **버튼블록→배지→타이틀→서브→카드** 네 구간이 모두 **시각 15.5~16px**로 맞춰져 있음. 4개 값이 **한 세트**이며, 하나만 바꾸면 리듬이 깨진다:
+  | 구간 | 제어 선언 | 잉크 보정 | 시각 |
+  |---|---|---|---|
+  | 버튼블록↔배지 | `.hero-content{margin-top:16px}` | 0 (박스=시각) | 16.0 |
+  | 배지↔타이틀 | `.hero-badge{margin-bottom:11px}` | +5 (32px Pretendard 상단) | 16.0 |
+  | 타이틀↔서브 | `.hero-title{margin-bottom:5px}` | +10.6 (타이틀 하단+서브 상단) | 15.6 |
+  | 서브↔카드 | `.hero-sub{margin-bottom:10px}` | +5.6 (서브 하단) | 15.5 |
+  - ⚠️ **박스값(margin)과 시각값이 다르다** — 폰트 잉크 여백 때문. margin 숫자만 보고 "안 맞았네" 판단 금지, 반드시 잉크 기준 실측.
+  - 작업 전 실측: 16 / 21 / 26.6 / **5.5**(박스 0 — `carousel-wrapper`는 margin·padding 0이라 서브 문구가 카드에 붙어 있었음).
+  - 카드·푸터 위치는 거의 불변(카드 상단 377.9→377.4px) — 총합을 유지하며 재분배했기 때문.
+- **히어로 서브 문장 줄바꿈 (v=20260805a)**: `<br class="hero-sub-br">`가 모바일에서만 `display:inline` → "…통합 금융 계산기, / 전문 비서 챗봇까지." 2줄 고정. 데스크톱은 `display:none`으로 1줄 유지. ⚠️`<br>` **뒤에 공백 1칸 필수**(앞에 두면 데스크톱에서 "계산기,전문"으로 붙음). `word-break:keep-all`로 어절 중간 절단 방지 — 280px에서도 overflow 0 실측
 - **헤더 4버튼 2x2 grid (v=20260523a, commit c89f738)**: 모바일에서 `.logo-actions` grid 2x2 + `.logo-actions-row{display:contents}` 트릭으로 HTML 구조 보존 + 라벨 단축(비밀번호 변경→비번변경, AI 활용 헬프 데스크→헬프데스크). 360px viewport overflow -5px → safety +16px 검증 완료
 
 ## Open Graph 링크 미리보기 (v=20260418)

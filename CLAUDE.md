@@ -3,14 +3,14 @@
 ## 🟢 현재 LIVE (이 줄을 배포마다 갱신)
 | 항목 | 값 |
 |---|---|
-| **버전** | **v=20260728** (사번 정합성 fix) |
-| **코드 커밋** | `825753d` (사번 fix) / `331a5f6` (change-email 도구) — 이후 docs 커밋은 LIVE 동작 무변경 |
-| **SW 캐시** | `pro-ai-v13` (sw.js) |
+| **버전** | **v=20260805a** (모바일 히어로 행간·줄바꿈) |
+| **코드 커밋** | `cbccf17` (모바일 히어로) / `825753d` (사번 fix) / `331a5f6` (change-email 도구) — 이후 docs 커밋은 LIVE 동작 무변경 |
+| **SW 캐시** | `pro-ai-v14` (sw.js) |
 | **배포** | GitHub `proenterpriseai/Pro_MainDashboard` → Vercel `pro-dashboards.com` (push 시 자동, ~30초) |
 | **활성 Flag** | `FEATURE_SMS_PW_RESET=true`(700명 공개) / `FEATURE_TEMP_PASSWORD=false`(미배포·조직정책 차단) |
 | **사용자 규모** | users 156건 / employee_lookup 151건 (2026-07-28 실측) |
 
-- 🔜 **배포 대기 `v=20260805a`** (2026-08-05 작업분, 커밋/push 전) — 모바일 히어로 2건: ①**4구간 행간 균등화**(버튼블록→배지→타이틀→서브→카드 전부 시각 15.5~16px, `margin-top:16px`/`badge 11px`/`title 5px`/`sub 10px` **4개 세트**) ②서브 문장 줄바꿈 고정(`.hero-sub-br` 모바일 전용 `<br>` + `word-break:keep-all`). `sw.js` CACHE `pro-ai-v13→v14`. 데스크톱/가로모드 무변경 실측 확인. → 배포 후 위 표 갱신할 것.
+- 2026-08-05 `v=20260805a` (commit `cbccf17`) — 모바일 히어로 2건: ①**4구간 행간 균등화**(버튼블록→배지→타이틀→서브→카드 전부 시각 15.5~16px, `margin-top:16px`/`badge 11px`/`title 5px`/`sub 10px` **4개 세트**) ②서브 문장 줄바꿈 고정(`.hero-sub-br` 모바일 전용 `<br>` + `word-break:keep-all`). `sw.js` CACHE `pro-ai-v13→v14`. LIVE `pro-dashboards.com` 실측 확인(16/16/15.6/15.5), 데스크톱·가로모드 무변경.
 - 2026-07-28 `v=20260728` — **사번 정합성 fix**: doLogin 사번 덮어쓰기 제거 + doSignup 7자리 검증 + 신규생성 seed 보완 + CACHE v13. ⛔되돌림 금지 → 아래 "사원번호 정책" 참조.
 - 2026-06-10 `FEATURE_SMS_PW_RESET=true` 700명 공개 (commit `2f6169e`).
 - 2026-05-23 `v=20260523a` 모바일 헤더 2x2 grid (commit `c89f738`).

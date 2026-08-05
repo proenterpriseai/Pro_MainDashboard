@@ -3,13 +3,14 @@
 ## 🟢 현재 LIVE (이 줄을 배포마다 갱신)
 | 항목 | 값 |
 |---|---|
-| **버전** | **v=20260805b** (카드 설명 줄바꿈) |
-| **코드 커밋** | `5698e80` (카드 설명) / `cbccf17` (모바일 히어로) / `825753d` (사번 fix) / `331a5f6` (change-email 도구) — 이후 docs 커밋은 LIVE 동작 무변경 |
+| **버전** | **v=20260805c** (SW 즉시 교체) |
+| **코드 커밋** | `<이번 배포>` (SW skipWaiting) / `5698e80` (카드 설명) / `cbccf17` (모바일 히어로) / `825753d` (사번 fix) / `331a5f6` (change-email 도구) — 이후 docs 커밋은 LIVE 동작 무변경 |
 | **SW 캐시** | `pro-ai-v15` (sw.js) |
 | **배포** | GitHub `proenterpriseai/Pro_MainDashboard` → Vercel `pro-dashboards.com` (push 시 자동, ~30초) |
 | **활성 Flag** | `FEATURE_SMS_PW_RESET=true`(700명 공개) / `FEATURE_TEMP_PASSWORD=false`(미배포·조직정책 차단) |
 | **사용자 규모** | users 156건 / employee_lookup 151건 (2026-07-28 실측) |
 
+- 2026-08-05 `v=20260805c` — **SW 즉시 교체**(`skipWaiting`+`clients.claim`): 700명 전원이 새로고침 1회로 최신 화면. 기존엔 탭·PWA를 전부 닫아야 새 SW 활성화. CACHE는 `v15` 유지(에셋 무변화).
 - 2026-08-05 `v=20260805b` — **카드 설명 어절 경계 줄바꿈** 5개(보장분석·DB영업·계산기·코치·민원). `.card-desc-br`(모바일 전용 `<br>`) + `.card-desc-keep{word-break:keep-all}`. ⛔**'예상 보험금 산출 전문가'·'건강검진' 2개는 현행 유지가 실장님 지시** → `keep-all`을 `.card-desc` 전체에 걸지 말 것. CACHE v14→v15.
 - 2026-08-05 `v=20260805a` (commit `cbccf17`) — 모바일 히어로 2건: ①**4구간 행간 균등화**(버튼블록→배지→타이틀→서브→카드 전부 시각 15.5~16px, `margin-top:16px`/`badge 11px`/`title 5px`/`sub 10px` **4개 세트**) ②서브 문장 줄바꿈 고정(`.hero-sub-br` 모바일 전용 `<br>` + `word-break:keep-all`). `sw.js` CACHE `pro-ai-v13→v14`. LIVE `pro-dashboards.com` 실측 확인(16/16/15.6/15.5), 데스크톱·가로모드 무변경.
 - 2026-07-28 `v=20260728` — **사번 정합성 fix**: doLogin 사번 덮어쓰기 제거 + doSignup 7자리 검증 + 신규생성 seed 보완 + CACHE v13. ⛔되돌림 금지 → 아래 "사원번호 정책" 참조.
@@ -59,6 +60,9 @@
 
 ## Service Worker 캐시 (sw.js)
 - `CACHE_NAME` — 수동 버전 관리 (수정 시 이 값도 함께 갱신). **현재 값은 최상단 LIVE 표 참조** (여기에 숫자를 적으면 드리프트 반복)
+- **즉시 교체 (v=20260805c)**: `install`에 `skipWaiting()` + `activate`에 `clients.claim()`. 없으면 새 SW가 **해당 출처의 탭·PWA 창을 전부 닫을 때까지 waiting 상태**로 대기 → 앱을 계속 띄워두는 사용자는 구 SW가 서비스. ⛔되돌리지 말 것(되돌리면 일부 사용자에게 배포가 늦게 반영됨).
+- **캐시 이름은 에셋이 바뀔 때만 bump**: `sw.js` 자체를 수정하면 바이트 차이만으로 SW 업데이트가 트리거됨. 이미지·목록 변화가 없으면 `CACHE_NAME` 유지가 맞음(불필요한 재다운로드 방지).
+- **HTTP 헤더 실측(2026-08-05)**: Vercel이 `index.html`·`sw.js`에 `Cache-Control: public, max-age=0, must-revalidate` 부여 → 브라우저가 매번 재검증. `vercel.json` 없음(기본 동작). **HTML은 캐시 병목이 아님** — 사용자가 구버전을 본다면 원인은 SW 또는 리로드 안 함.
 - Firebase/Google API: 네트워크 전용 (캐시 안 함)
 - 기타: 네트워크 우선 + 캐시 fallback
 - **캐시 갱신**: `CACHE_NAME` 버전 올려야 기존 사용자에게 반영

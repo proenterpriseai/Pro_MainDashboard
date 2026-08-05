@@ -17,6 +17,10 @@ self.addEventListener('install', function(event) {
   event.waitUntil(
     caches.open(CACHE_NAME).then(function(cache) {
       return cache.addAll(urlsToCache);
+    }).then(function() {
+      // 새 SW를 대기(waiting) 상태에 두지 않고 즉시 교체 (v=20260805c)
+      // 없으면 해당 출처의 탭/PWA 창을 전부 닫을 때까지 구 SW가 계속 서비스됨 → 일부 사용자만 구버전
+      return self.skipWaiting();
     })
   );
 });
@@ -51,6 +55,9 @@ self.addEventListener('activate', function(event) {
           return caches.delete(name);
         })
       );
+    }).then(function() {
+      // 이미 열려 있는 탭까지 새 SW가 즉시 담당 (v=20260805c)
+      return self.clients.claim();
     })
   );
 });

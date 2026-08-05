@@ -65,7 +65,7 @@
 - **HTTP 헤더 실측(2026-08-05)**: Vercel이 `index.html`·`sw.js`에 `Cache-Control: public, max-age=0, must-revalidate` 부여 → 브라우저가 매번 재검증. `vercel.json` 없음(기본 동작). **HTML은 캐시 병목이 아님** — 사용자가 구버전을 본다면 원인은 SW 또는 리로드 안 함.
 - Firebase/Google API: 네트워크 전용 (캐시 안 함)
 - 기타: 네트워크 우선 + 캐시 fallback
-- **캐시 갱신**: `CACHE_NAME` 버전 올려야 기존 사용자에게 반영
+- **캐시 갱신**: `urlsToCache`에 든 정적 파일(이미지·아이콘)을 교체하면 `CACHE_NAME` bump 필수 — 안 올리면 구 캐시가 계속 매칭됨. HTML/CSS/JS는 네트워크 우선이라 bump 없이도 반영되지만, 관례상 UI 변경 시 함께 올려 왔음(위 "에셋이 바뀔 때만" 항목과 함께 판단)
 
 ## ⚠️ 전수 검증 결과 (v=20260325)
 - Firebase Auth: 1,000명 동시접속 안전 (Google 인프라 자동 스케일링)

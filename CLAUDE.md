@@ -58,7 +58,7 @@
 - Firebase 다운 시: 오프라인 대응 없음 (Auth 실패 → 접근 불가)
 
 ## Service Worker 캐시 (sw.js)
-- `CACHE_NAME = 'pro-ai-v13'` — 수동 버전 관리 (수정 시 이 값도 함께 갱신)
+- `CACHE_NAME` — 수동 버전 관리 (수정 시 이 값도 함께 갱신). **현재 값은 최상단 LIVE 표 참조** (여기에 숫자를 적으면 드리프트 반복)
 - Firebase/Google API: 네트워크 전용 (캐시 안 함)
 - 기타: 네트워크 우선 + 캐시 fallback
 - **캐시 갱신**: `CACHE_NAME` 버전 올려야 기존 사용자에게 반영

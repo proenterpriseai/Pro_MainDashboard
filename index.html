@@ -1863,7 +1863,7 @@ function _isSmsPwResetOn() {
 /* ── FEATURE_SMS_PW_EMAIL_HINT — 재설정 성공 시 로그인 이메일 표시 (독립 블록, 2026-09-18) ──
    "가입 이메일을 잊어 로그인 불가" 컴플레인의 셀프서비스화. OTP 본인확인 통과자에게만 서버가 반환.
    Flag=false 시 기존 성공 메시지와 완전 동일 (영향 0) */
-var FEATURE_SMS_PW_EMAIL_HINT = false; // 검증 전 false. 옵트인 테스트: sessionStorage._flag_sms_pw_email='true'
+var FEATURE_SMS_PW_EMAIL_HINT = true; // 700명 공개 (대표님 명시 승인 2026-09-18, 실장 옵트인 실측 완료). 비활성 테스트: sessionStorage._flag_sms_pw_email='false'
 
 function _isSmsPwEmailHintOn() {
   try {
@@ -2038,7 +2038,7 @@ function smsPwConfirm() {
    의존: 동일 서버 엔드포인트 유틸 _smsPwApi / _smsPwEscapeHtml (FEATURE_SMS_PW_RESET 블록).
    Flag=false 시 로그인 화면 링크 자체가 숨김 (영향 0)
    ═══════════════════════════════════════ */
-var FEATURE_EMAIL_FIND = false; // 검증 전 false. 옵트인 테스트: sessionStorage._flag_email_find='true' 후 새로고침
+var FEATURE_EMAIL_FIND = true; // 700명 공개 (대표님 명시 승인 2026-09-18, 실장 옵트인 실측 완료). 비활성 테스트: sessionStorage._flag_email_find='false' 후 새로고침
 
 function _isEmailFindOn() {
   try {

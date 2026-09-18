@@ -3,13 +3,14 @@
 ## 🟢 현재 LIVE (이 줄을 배포마다 갱신)
 | 항목 | 값 |
 |---|---|
-| **버전** | **v=20260805c** (SW 즉시 교체) |
-| **코드 커밋** | `e3f6321` (SW skipWaiting) / `5698e80` (카드 설명) / `cbccf17` (모바일 히어로) / `825753d` (사번 fix) / `331a5f6` (change-email 도구) — 이후 docs 커밋은 LIVE 동작 무변경 |
+| **버전** | **v=20260805c** (SW 즉시 교체 — 클라이언트 무변경, 서버 API만 `ace37be`로 갱신) |
+| **코드 커밋** | `ace37be` (서버 WIF 전환 2026-09-18) / `e3f6321` (SW skipWaiting) / `5698e80` (카드 설명) / `cbccf17` (모바일 히어로) / `825753d` (사번 fix) / `331a5f6` (change-email 도구) — 이후 docs 커밋은 LIVE 동작 무변경 |
 | **SW 캐시** | `pro-ai-v15` (sw.js) |
 | **배포** | GitHub `proenterpriseai/Pro_MainDashboard` → Vercel `pro-dashboards.com` (push 시 자동, ~30초) |
 | **활성 Flag** | `FEATURE_SMS_PW_RESET=true`(700명 공개) / `FEATURE_TEMP_PASSWORD=false`(미배포·조직정책 차단) |
 | **사용자 규모** | users 156건 / employee_lookup 151건 (2026-07-28 실측) |
 
+- 2026-09-18 `ace37be` — **서버 인증 WIF 전환**(대표님 사전 승인·트리플 A GO): SMS 비번 재설정의 토큰 만료(invalid_rapt) 영구 해결. Vercel OIDC(Team 모드)→GCP Workload Identity Federation→서비스 계정 `vercel-sms-reset@`. 저장 자격증명 0. 라이브 프로브 검증(가짜 사번→`NO_MATCH`). 아래 "SMS 인증 비밀번호 재설정" 섹션 참조.
 - 2026-08-05 `v=20260805c` — **SW 즉시 교체**(`skipWaiting`+`clients.claim`): 700명 전원이 새로고침 1회로 최신 화면. 기존엔 탭·PWA를 전부 닫아야 새 SW 활성화. CACHE는 `v15` 유지(에셋 무변화).
 - 2026-08-05 `v=20260805b` — **카드 설명 어절 경계 줄바꿈** 5개(보장분석·DB영업·계산기·코치·민원). `.card-desc-br`(모바일 전용 `<br>`) + `.card-desc-keep{word-break:keep-all}`. ⛔**'예상 보험금 산출 전문가'·'건강검진' 2개는 현행 유지가 실장님 지시** → `keep-all`을 `.card-desc` 전체에 걸지 말 것. CACHE v14→v15.
 - 2026-08-05 `v=20260805a` (commit `cbccf17`) — 모바일 히어로 2건: ①**4구간 행간 균등화**(버튼블록→배지→타이틀→서브→카드 전부 시각 15.5~16px, `margin-top:16px`/`badge 11px`/`title 5px`/`sub 10px` **4개 세트**) ②서브 문장 줄바꿈 고정(`.hero-sub-br` 모바일 전용 `<br>` + `word-break:keep-all`). `sw.js` CACHE `pro-ai-v13→v14`. LIVE `pro-dashboards.com` 실측 확인(16/16/15.6/15.5), 데스크톱·가로모드 무변경.
@@ -110,8 +111,8 @@
   - OTP: 6자리, sha256 해시 저장(pepper=SOLAPI_SECRET), 5분 만료, 검증 5회(낙관적 잠금 직렬화), 발송 일 5회+60초 쿨다운
   - 방어: Origin 화이트리스트(pro-dashboards.com + pro-main-dashboard*.vercel.app) / 발송대상=users.phone만
   - OTP 문서 `pw_reset_otps/{empNo}` — Firestore 엄격 규칙 catch-all(if false)로 클라 차단, 서버만 접근
-- **환경변수** (전부 Sensitive): `SOLAPI_API_KEY`/`SOLAPI_API_SECRET`/`SMS_SENDER_PHONE`(01047337148)/`FIREBASE_ADMIN_REFRESH_TOKEN`
-- **⚠️ 토큰 수명 이슈**: 회사 계정 토큰은 조직 재인증 정책으로 주기 만료(`invalid_rapt`) → 만료 시 서버가 `SMS_UNAVAILABLE` 응답 → **클라이언트가 기존 이메일 방식으로 자동 전환**(무중단). 복구=`npx firebase-tools login --reauth` 후 새 토큰 Vercel 재등록. 영구 해결(서비스계정) 검토 중 — 조직 도메인 제한이 외부 주체 추가 차단(gmail 직접 추가 실패 확인)
+- **환경변수** (전부 Sensitive): `SOLAPI_API_KEY`/`SOLAPI_API_SECRET`/`SMS_SENDER_PHONE`(01047337148)/`FIREBASE_ADMIN_REFRESH_TOKEN`(폴백용 — ⛔삭제 금지, 삭제 시 WIF 단일 장애점화)
+- **✅ 토큰 수명 이슈 영구 해결 (2026-09-18 `ace37be`, 대표님 승인·트리플 A GO)**: 인증 1순위=**WIF**(Vercel OIDC Team 모드 → `x-vercel-oidc-token` 헤더 → STS 교환 → SA `vercel-sms-reset@pro-enterprise-ai` impersonation, 역할=datastore.user+firebaseauth.admin). 저장 자격증명 0 → 재인증 정책(invalid_rapt) 무관. 2순위 폴백=기존 refresh token. 401/403=`AUTH_DENIED`→`SMS_UNAVAILABLE`(이메일 전환)+캐시 무효화, 실패 네거티브 캐시 5분. GCP 설정=`_setup-wif.js`(멱등, `--verify`=조회 전용). **감시 신호=함수 로그의 `AUTH_DENIED`/`WIF STS 교환 실패` 문자열**. ⚠️Vercel OIDC 설정(Settings→Security, Team 모드)을 끄면 폴백(죽은 토큰)으로 떨어져 SMS 사망 — 유지 필수
 - **클라이언트**: `openPwResetModal()` Flag 게이트 + 독립 `smsPwModal`/`_smsPw*` 블록. 휴대폰 미등록(`NO_PHONE`)도 이메일 자동 fallback. 기존 doPwReset 무수정
 - **검증(2026-06-10)**: Preview 실측 — 문자 수신→OTP→변경→pro-dashboards.com 새 비번 로그인 성공. 129명 전원 phone+lookup 보유(이메일 fallback 대상 0명). 솔라피 발신번호 010-4733-7148(개인 명의, **인증 만료 2026-12-10 — 재인증 필요**)
 - **flip 전 체크리스트**: ① Vercel Firewall `/api/*` 레이트리밋 ② 토큰 영구화 또는 재인증 운영 룰 확정 ③ 대표님 명시 승인

@@ -1817,6 +1817,26 @@ function _isSmsPwResetOn() {
   return FEATURE_SMS_PW_RESET;
 }
 
+/* ── FEATURE_SMS_PW_EMAIL_HINT — 재설정 성공 시 로그인 이메일 표시 (독립 블록, 2026-09-18) ──
+   "가입 이메일을 잊어 로그인 불가" 컴플레인의 셀프서비스화. OTP 본인확인 통과자에게만 서버가 반환.
+   Flag=false 시 기존 성공 메시지와 완전 동일 (영향 0) */
+var FEATURE_SMS_PW_EMAIL_HINT = false; // 검증 전 false. 옵트인 테스트: sessionStorage._flag_sms_pw_email='true'
+
+function _isSmsPwEmailHintOn() {
+  try {
+    var o = sessionStorage.getItem('_flag_sms_pw_email');
+    if (o === 'true') return true;
+    if (o === 'false') return false;
+  } catch (_) { /* sessionStorage 차단 환경 → Flag 기본값 */ }
+  return FEATURE_SMS_PW_EMAIL_HINT;
+}
+
+function _smsPwEscapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
+
 var _smsPwState = { empNo: '', name: '' };
 
 function _smsPwShowError(msg) {
@@ -1937,8 +1957,15 @@ function smsPwConfirm() {
     .then(function (data) {
       if (data.ok) {
         _smsPwBtn('smsPwConfirmBtn', true, '<i class="fas fa-check"></i> 변경 완료');
-        _smsPwShowSuccess('✅ 비밀번호가 변경되었습니다.<br><span style="font-size:11px;color:#cbd5e1;">새 비밀번호로 바로 로그인해 주세요.</span>');
-        setTimeout(closeSmsPwModal, 3000);
+        /* FEATURE_SMS_PW_EMAIL_HINT: 로그인 이메일 힌트 — Flag off 시 기존 메시지·3초 닫힘 그대로 */
+        var _emailHint = '';
+        var _closeDelay = 3000;
+        if (_isSmsPwEmailHintOn() && data.email) {
+          _emailHint = '<br><span style="font-size:12px;color:#93c5fd;">로그인 이메일: <b>' + _smsPwEscapeHtml(data.email) + '</b></span>';
+          _closeDelay = 8000; // 이메일을 읽고 적을 시간 확보
+        }
+        _smsPwShowSuccess('✅ 비밀번호가 변경되었습니다.' + _emailHint + '<br><span style="font-size:11px;color:#cbd5e1;">새 비밀번호로 바로 로그인해 주세요.</span>');
+        setTimeout(closeSmsPwModal, _closeDelay);
         return;
       }
       if (data.code === 'SMS_UNAVAILABLE') {

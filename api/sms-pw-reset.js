@@ -299,6 +299,8 @@ async function handleRequest(token, empNo, name) {
   await fsSetDoc(token, 'pw_reset_otps', empNo, {
     otpHash: str(hashOtp(empNo, otp)),
     uid: str(user.uid),
+    // 로그인 이메일 힌트용(OTP 검증 성공자에게만 반환, 문서는 서버 전용+성공 시 삭제) — 2026-09-18
+    email: str(user.email || ''),
     expiresAt: int(now + OTP_TTL_MS),
     attempts: int(0),
     sendDate: str(today),
@@ -323,7 +325,7 @@ async function handleConfirm(token, empNo, otp, newPassword) {
   // 시도 슬롯 선점: 해시 비교 전에 attempts를 낙관적 잠금으로 증분 →
   // 병렬 confirm 폭주여도 검증 기회가 정확히 5회로 직렬화됨 (무차별 대입 차단)
   const preserved = {};
-  for (const k of ['otpHash', 'uid', 'expiresAt', 'sendDate', 'sendCount', 'lastSentAt']) {
+  for (const k of ['otpHash', 'uid', 'email', 'expiresAt', 'sendDate', 'sendCount', 'lastSentAt']) {
     if (f[k]) preserved[k] = f[k];
   }
   preserved.attempts = int(attempts + 1);
@@ -342,7 +344,8 @@ async function handleConfirm(token, empNo, otp, newPassword) {
   if (!uid) return { ok: false, code: 'NO_REQUEST' };
   await updateAuthPassword(token, uid, newPassword);
   await fsDeleteDoc(token, 'pw_reset_otps', empNo);
-  return { ok: true };
+  // email = 로그인 이메일 힌트(추가 필드 — 구 클라이언트는 무시, OTP 본인확인 통과자에게만)
+  return { ok: true, email: getStr(f, 'email') };
 }
 
 // ── 엔트리 ──

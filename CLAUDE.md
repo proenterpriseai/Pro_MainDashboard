@@ -3,8 +3,8 @@
 ## 🟢 현재 LIVE (이 줄을 배포마다 갱신)
 | 항목 | 값 |
 |---|---|
-| **버전** | **v=20260805c** (SW 즉시 교체 — 클라이언트 무변경, 서버 API만 `ace37be`로 갱신) |
-| **코드 커밋** | `ace37be` (서버 WIF 전환 2026-09-18) / `e3f6321` (SW skipWaiting) / `5698e80` (카드 설명) / `cbccf17` (모바일 히어로) / `825753d` (사번 fix) / `331a5f6` (change-email 도구) — 이후 docs 커밋은 LIVE 동작 무변경 |
+| **버전** | **v=20260918a** (비번/이메일 셀프서비스 3종 완성 — WIF+이메일 힌트+이메일 찾기. SW 캐시·에셋 무변경이라 CACHE bump 없음, HTML은 네트워크 우선으로 즉시 반영) |
+| **코드 커밋** | `74f5a18` (flag 2종 true 공개) / `94cbba6` (이메일 찾기) / `00a9630` (이메일 힌트) / `ace37be` (서버 WIF 전환) — 전부 2026-09-18 / 이전: `e3f6321` (SW skipWaiting) / `825753d` (사번 fix) / `331a5f6` (change-email 도구) — 이후 docs 커밋은 LIVE 동작 무변경 |
 | **SW 캐시** | `pro-ai-v15` (sw.js) |
 | **배포** | GitHub `proenterpriseai/Pro_MainDashboard` → Vercel `pro-dashboards.com` (push 시 자동, ~30초) |
 | **활성 Flag** | `FEATURE_SMS_PW_RESET=true` / `FEATURE_SMS_PW_EMAIL_HINT=true` / `FEATURE_EMAIL_FIND=true` (3종 700명 공개 — 뒤 2종 대표님 승인 2026-09-18) / `FEATURE_TEMP_PASSWORD=false`(미배포·조직정책 차단) |

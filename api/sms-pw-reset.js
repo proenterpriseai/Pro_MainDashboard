@@ -6,7 +6,14 @@
  *   { action: 'confirm', empNo, otp, newPassword } → 인증번호 검증 + 비밀번호 즉시 변경
  *
  * 환경변수 (전부 Vercel Sensitive):
- *   SOLAPI_API_KEY / SOLAPI_API_SECRET / SMS_SENDER_PHONE / FIREBASE_ADMIN_REFRESH_TOKEN
+ *   SOLAPI_API_KEY / SOLAPI_API_SECRET / SMS_SENDER_PHONE / FIREBASE_ADMIN_REFRESH_TOKEN(폴백용)
+ *
+ * 인증 (2026-09-18 WIF 전환 — 대표님 승인):
+ *   1순위 = Vercel OIDC → GCP Workload Identity Federation → 서비스 계정 토큰.
+ *     저장된 장기 자격증명 0 → 조직 재인증 정책(invalid_rapt)의 영향 자체가 없음.
+ *     설정 스크립트 = _setup-wif.js (풀/공급자/서비스계정/권한).
+ *   2순위(폴백) = 기존 refresh token 방식 — WIF 실패 시 기존 동작 그대로
+ *     (그것도 실패하면 SMS_UNAVAILABLE → 클라이언트가 이메일 방식 자동 전환, 종전과 동일).
  *
  * 보안 장치:
  *   - Origin/Referer 화이트리스트 (vertex-proxy 하드닝 패턴)
@@ -48,8 +55,65 @@ async function jfetch(url, options) {
   return { status: resp.status, data: data };
 }
 
-// ── Google OAuth: refresh token → access token ──
-async function getAccessToken() {
+// ── [WIF 독립 블록] Vercel OIDC → STS 교환 → 서비스 계정 토큰 ──
+// 상수는 비밀 아님(리소스 경로/이메일). 생성 스크립트 = _setup-wif.js
+const WIF_AUDIENCE = '//iam.googleapis.com/projects/13144153545/locations/global/workloadIdentityPools/vercel/providers/vercel';
+const WIF_SA_EMAIL = 'vercel-sms-reset@pro-enterprise-ai.iam.gserviceaccount.com';
+let _wifCache = { token: null, exp: 0 }; // 웜 인스턴스에서 STS 왕복 절약 (토큰 수명 1h, 50분 캐시)
+let _wifFailUntil = 0; // 실패 네거티브 캐시 5분 — WIF 상시 실패 구성에서 요청마다 STS 2왕복 지불 방지
+
+async function getWifAccessToken(req) {
+  // Vercel이 함수 요청마다 주입하는 OIDC 토큰 (프로젝트 설정에서 OIDC 미활성 시 부재 → 폴백)
+  const oidc = req && req.headers && req.headers['x-vercel-oidc-token'];
+  if (!oidc) return null;
+  if (_wifCache.token && Date.now() < _wifCache.exp) return _wifCache.token;
+  if (Date.now() < _wifFailUntil) return null;
+
+  // 1) STS: Vercel OIDC 토큰 → 연합(federated) 토큰
+  const sts = await jfetch('https://sts.googleapis.com/v1/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      grantType: 'urn:ietf:params:oauth:grant-type:token-exchange',
+      audience: WIF_AUDIENCE,
+      scope: 'https://www.googleapis.com/auth/cloud-platform',
+      requestedTokenType: 'urn:ietf:params:oauth:token-type:access_token',
+      subjectToken: oidc,
+      subjectTokenType: 'urn:ietf:params:oauth:token-type:jwt'
+    })
+  });
+  if (!sts.data || !sts.data.access_token) {
+    console.error('[sms-pw-reset] WIF STS 교환 실패', sts.status, JSON.stringify(sts.data));
+    _wifFailUntil = Date.now() + 5 * 60 * 1000;
+    return null;
+  }
+
+  // 2) 연합 토큰 → 서비스 계정 impersonation 토큰
+  const imp = await jfetch('https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/'
+    + WIF_SA_EMAIL + ':generateAccessToken', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + sts.data.access_token, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ scope: ['https://www.googleapis.com/auth/cloud-platform'], lifetime: '3600s' })
+  });
+  if (!imp.data || !imp.data.accessToken) {
+    console.error('[sms-pw-reset] WIF impersonation 실패', imp.status, JSON.stringify(imp.data));
+    _wifFailUntil = Date.now() + 5 * 60 * 1000;
+    return null;
+  }
+  _wifCache = { token: imp.data.accessToken, exp: Date.now() + 50 * 60 * 1000 };
+  return imp.data.accessToken;
+}
+
+// ── Google OAuth: WIF 1순위 + refresh token 폴백 ──
+async function getAccessToken(req) {
+  // 1순위: WIF — 사람 계정 자격증명 미사용(재인증 정책 무관). 실패는 로그만 남기고 폴백.
+  try {
+    const wifToken = await getWifAccessToken(req);
+    if (wifToken) return wifToken;
+  } catch (e) {
+    console.error('[sms-pw-reset] WIF 오류, refresh token 폴백:', (e && e.message) || e);
+  }
+  // 2순위(기존 동작 그대로): refresh token → access token
   const refreshToken = process.env.FIREBASE_ADMIN_REFRESH_TOKEN;
   if (!refreshToken) throw new Error('SERVER_CONFIG:FIREBASE_ADMIN_REFRESH_TOKEN');
   const body = 'grant_type=refresh_token'
@@ -70,9 +134,16 @@ const FS_BASE = 'https://firestore.googleapis.com/v1/projects/' + PROJECT_ID + '
 
 function fsAuth(token) { return { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }; }
 
+// 401/403 = 토큰은 발급됐으나 권한 거부(WIF IAM 미전파/회수 등) — AUTH_DENIED로 구분해
+// 핸들러가 SMS_UNAVAILABLE(이메일 자동 전환)로 매핑 + WIF 캐시 무효화 (500 SERVER_ERROR 방지)
+function authDeniedCheck(status, op) {
+  if (status === 401 || status === 403) throw new Error('AUTH_DENIED:' + op);
+}
+
 async function fsGetDoc(token, col, id) {
   const r = await jfetch(FS_BASE + '/' + col + '/' + encodeURIComponent(id), { headers: fsAuth(token) });
   if (r.status === 404) return null;
+  authDeniedCheck(r.status, 'FS_GET:' + col);
   if (r.status !== 200) throw new Error('FS_GET_FAIL:' + col);
   return r.data;
 }
@@ -90,6 +161,7 @@ async function fsSetDoc(token, col, id, fields, requireUpdateTime) {
     if (requireUpdateTime && (r.status === 409 || r.status === 412 || r.status === 400)) {
       throw new Error('FS_PRECONDITION');
     }
+    authDeniedCheck(r.status, 'FS_SET:' + col);
     throw new Error('FS_SET_FAIL:' + col);
   }
 }
@@ -99,7 +171,10 @@ async function fsDeleteDoc(token, col, id) {
     method: 'DELETE',
     headers: fsAuth(token)
   });
-  if (r.status !== 200 && r.status !== 204) throw new Error('FS_DELETE_FAIL:' + col);
+  if (r.status !== 200 && r.status !== 204) {
+    authDeniedCheck(r.status, 'FS_DELETE:' + col);
+    throw new Error('FS_DELETE_FAIL:' + col);
+  }
 }
 
 async function fsFindUserByEmpNo(token, empNo) {
@@ -110,6 +185,7 @@ async function fsFindUserByEmpNo(token, empNo) {
     }
   });
   const r = await jfetch(FS_BASE + ':runQuery', { method: 'POST', headers: fsAuth(token), body: body });
+  authDeniedCheck(r.status, 'FS_QUERY');
   if (r.status !== 200) throw new Error('FS_QUERY_FAIL');
   const rows = Array.isArray(r.data) ? r.data : [];
   const users = [];
@@ -180,7 +256,10 @@ async function updateAuthPassword(token, uid, newPassword) {
     headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
     body: JSON.stringify({ localId: uid, password: newPassword })
   });
-  if (r.status !== 200) throw new Error('PW_UPDATE_FAIL');
+  if (r.status !== 200) {
+    authDeniedCheck(r.status, 'PW_UPDATE');
+    throw new Error('PW_UPDATE_FAIL');
+  }
 }
 
 // ── action: request ──
@@ -292,7 +371,7 @@ module.exports = async function handler(req, res) {
   try {
     if (action === 'request') {
       if (!name || name.length > 20) { res.status(200).json({ ok: false, code: 'NO_MATCH' }); return; }
-      const token = await getAccessToken();
+      const token = await getAccessToken(req);
       res.status(200).json(await handleRequest(token, empNo, name));
       return;
     }
@@ -301,7 +380,7 @@ module.exports = async function handler(req, res) {
       const newPassword = String(body.newPassword || '');
       if (!/^[0-9]{6}$/.test(otp)) { res.status(200).json({ ok: false, code: 'OTP_INVALID', remaining: null }); return; }
       if (newPassword.length < 6 || newPassword.length > 100) { res.status(200).json({ ok: false, code: 'WEAK_PASSWORD' }); return; }
-      const token = await getAccessToken();
+      const token = await getAccessToken(req);
       res.status(200).json(await handleConfirm(token, empNo, otp, newPassword));
       return;
     }
@@ -309,8 +388,11 @@ module.exports = async function handler(req, res) {
   } catch (err) {
     const msg = (err && err.message) || '';
     console.error('[sms-pw-reset] 오류:', msg);
-    // 권한 토큰 만료(invalid_rapt 등)·서버 설정 누락 → 클라이언트가 이메일 방식으로 자동 전환하도록 구분 응답
-    if (msg.indexOf('ACCESS_TOKEN_FAIL') !== -1 || msg.indexOf('SERVER_CONFIG') !== -1) {
+    // 권한 토큰 만료(invalid_rapt 등)·서버 설정 누락·토큰 권한 거부(WIF IAM 미비 등)
+    // → 클라이언트가 이메일 방식으로 자동 전환하도록 구분 응답 (오늘보다 나빠지지 않기 보장)
+    if (msg.indexOf('ACCESS_TOKEN_FAIL') !== -1 || msg.indexOf('SERVER_CONFIG') !== -1
+      || msg.indexOf('AUTH_DENIED') !== -1) {
+      _wifCache = { token: null, exp: 0 }; // 무효/권한 없는 WIF 토큰이 캐시에 남지 않도록
       res.status(200).json({ ok: false, code: 'SMS_UNAVAILABLE' });
       return;
     }

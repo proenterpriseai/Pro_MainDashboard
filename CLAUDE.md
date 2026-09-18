@@ -7,9 +7,10 @@
 | **코드 커밋** | `ace37be` (서버 WIF 전환 2026-09-18) / `e3f6321` (SW skipWaiting) / `5698e80` (카드 설명) / `cbccf17` (모바일 히어로) / `825753d` (사번 fix) / `331a5f6` (change-email 도구) — 이후 docs 커밋은 LIVE 동작 무변경 |
 | **SW 캐시** | `pro-ai-v15` (sw.js) |
 | **배포** | GitHub `proenterpriseai/Pro_MainDashboard` → Vercel `pro-dashboards.com` (push 시 자동, ~30초) |
-| **활성 Flag** | `FEATURE_SMS_PW_RESET=true`(700명 공개) / `FEATURE_SMS_PW_EMAIL_HINT=false`(옵트인 `sessionStorage._flag_sms_pw_email`) / `FEATURE_EMAIL_FIND=false`(옵트인 `sessionStorage._flag_email_find`) — 둘 다 대표님 true 승인 대기 / `FEATURE_TEMP_PASSWORD=false`(미배포·조직정책 차단) |
+| **활성 Flag** | `FEATURE_SMS_PW_RESET=true` / `FEATURE_SMS_PW_EMAIL_HINT=true` / `FEATURE_EMAIL_FIND=true` (3종 700명 공개 — 뒤 2종 대표님 승인 2026-09-18) / `FEATURE_TEMP_PASSWORD=false`(미배포·조직정책 차단) |
 | **사용자 규모** | users 156건 / employee_lookup 151건 (2026-07-28 실측) |
 
+- 2026-09-18 `74f5a18` — **이메일 힌트+이메일 찾기 flag true 700명 공개**(대표님 명시 승인, 실장 옵트인 실측 PC+모바일 완료, 라이브 grep으로 두 flag=true 확인).
 - 2026-09-18 `94cbba6` — **이메일 찾기 Flag false**(`FEATURE_EMAIL_FIND`, 트리플 A GO): 로그인 화면 "이메일 찾기" 링크(기본 숨김) → 사번+이름 → SMS OTP → 이메일 표시(비번 무변경). 서버 `confirm-email` 액션 — 기존 OTP 인프라 재사용(발송 한도·시도 5회 두 액션 합산 공유). "이메일 잊음"과 "비번 잊음"의 독립 셀프서비스화. 라이브 프로브: request=`NO_MATCH`·confirm-email=`NO_REQUEST` 확인.
 - 2026-09-18 `00a9630` — **로그인 이메일 힌트 Flag false**(`FEATURE_SMS_PW_EMAIL_HINT`, 트리플 A GO): SMS 재설정 성공 화면에 가입 이메일 표시(OTP 통과자에게만 서버 반환, XSS 이스케이프, off=기존과 문자 단위 동일). "가입 이메일 잊음" 셀프서비스화. true=대표님 승인 후. 🟡리뷰 부기: 레포 firestore.rules의 catch-all `if false` 주석 상태 vs 문서 서술 불일치 — 콘솔 실규칙 1회 실사 후보(안전은 default-deny가 보장).
 - 2026-09-18 `ace37be` — **서버 인증 WIF 전환**(대표님 사전 승인·트리플 A GO): SMS 비번 재설정의 토큰 만료(invalid_rapt) 영구 해결. Vercel OIDC(Team 모드)→GCP Workload Identity Federation→서비스 계정 `vercel-sms-reset@`. 저장 자격증명 0. 라이브 프로브 검증(가짜 사번→`NO_MATCH`). 아래 "SMS 인증 비밀번호 재설정" 섹션 참조.

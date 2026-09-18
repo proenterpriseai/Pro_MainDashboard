@@ -348,6 +348,42 @@ async function handleConfirm(token, empNo, otp, newPassword) {
   return { ok: true, email: getStr(f, 'email') };
 }
 
+// ── action: confirm-email — OTP 검증 후 로그인 이메일만 반환 (비밀번호 무변경) ──
+// "이메일을 잊었을 때" 셀프서비스용 (FEATURE_EMAIL_FIND). handleConfirm과 동일한
+// 시도 한도·낙관적 잠금을 유지하되 계정에는 어떤 변경도 가하지 않는 독립 블록.
+async function handleConfirmEmail(token, empNo, otp) {
+  const otpDoc = await fsGetDoc(token, 'pw_reset_otps', empNo);
+  if (!otpDoc) return { ok: false, code: 'NO_REQUEST' };
+  const f = otpDoc.fields || {};
+  const now = Date.now();
+
+  if (now > getInt(f, 'expiresAt')) return { ok: false, code: 'OTP_EXPIRED' };
+  const attempts = getInt(f, 'attempts');
+  if (attempts >= MAX_VERIFY_ATTEMPTS) return { ok: false, code: 'OTP_LOCKED' };
+
+  // 시도 슬롯 선점 (handleConfirm과 동일 — 병렬 무차별 대입 차단)
+  const preserved = {};
+  for (const k of ['otpHash', 'uid', 'email', 'expiresAt', 'sendDate', 'sendCount', 'lastSentAt']) {
+    if (f[k]) preserved[k] = f[k];
+  }
+  preserved.attempts = int(attempts + 1);
+  try {
+    await fsSetDoc(token, 'pw_reset_otps', empNo, preserved, otpDoc.updateTime);
+  } catch (err) {
+    if (err.message === 'FS_PRECONDITION') return { ok: false, code: 'OTP_BUSY' };
+    throw err;
+  }
+
+  if (getStr(f, 'otpHash') !== hashOtp(empNo, otp)) {
+    return { ok: false, code: 'OTP_INVALID', remaining: MAX_VERIFY_ATTEMPTS - attempts - 1 };
+  }
+
+  const email = getStr(f, 'email');
+  await fsDeleteDoc(token, 'pw_reset_otps', empNo); // 1회용 — 검증 성공 시 즉시 소멸
+  if (!email) return { ok: false, code: 'NO_EMAIL' }; // 구버전 OTP 문서(email 미저장) 전환기 안전망
+  return { ok: true, email: email };
+}
+
 // ── 엔트리 ──
 module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
@@ -385,6 +421,13 @@ module.exports = async function handler(req, res) {
       if (newPassword.length < 6 || newPassword.length > 100) { res.status(200).json({ ok: false, code: 'WEAK_PASSWORD' }); return; }
       const token = await getAccessToken(req);
       res.status(200).json(await handleConfirm(token, empNo, otp, newPassword));
+      return;
+    }
+    if (action === 'confirm-email') {
+      const otp = String(body.otp || '').trim();
+      if (!/^[0-9]{6}$/.test(otp)) { res.status(200).json({ ok: false, code: 'OTP_INVALID', remaining: null }); return; }
+      const token = await getAccessToken(req);
+      res.status(200).json(await handleConfirmEmail(token, empNo, otp));
       return;
     }
     res.status(400).json({ ok: false, code: 'BAD_ACTION' });

@@ -11,3 +11,7 @@ memory.md
 _*.js
 _*.py
 _*.json
+# 사이트와 무관한 Firebase 설정·규칙 사본·미배포 Cloud Functions 코드는 공개 배포에서 제외 (2026-11-04)
+firestore.rules
+firebase.json
+functions/

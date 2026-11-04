@@ -88,6 +88,8 @@ body{font-family:'Pretendard',sans-serif;background:#000;color:#e2e8f0;overflow:
 .hero-sub{font-size:clamp(13px,1.2vw,16px);color:#fff;line-height:1.7;max-width:500px;margin:0 auto;}
 /* 서브 문장 모바일 전용 줄바꿈 지점 (v=20260805a) — 데스크톱은 1줄 유지 */
 .hero-sub-br{display:none;}
+/* FEATURE_CEO_CARD 전용 (2026-11-04) — 법인 CEO 컨설팅이 들어간 서브 문장(16px 기준 533px)을 데스크톱 1줄로 유지. Flag off면 이 클래스를 붙이지 않음 */
+.hero-sub-wide{max-width:560px;}
 
 /* ── 캐러셀 ── */
 .carousel-wrapper{position:relative;flex-shrink:0;margin-top:auto;padding:0 40px;}
@@ -566,6 +568,25 @@ body{font-family:'Pretendard',sans-serif;background:#000;color:#e2e8f0;overflow:
             </div>
           </div>
 
+          <!-- 카드 2-1: 법인 CEO 컨설팅 (FEATURE_CEO_CARD — template이라 Flag off면 렌더·캐러셀 개수 영향 0, on이면 이 자리에 펼침) -->
+          <template id="ceoCardTpl">
+          <div class="tool-card glow-target" onclick="_trackOpen('법인 CEO 컨설팅','https://proceoconsulting.com')">
+            <div class="glow-border"></div>
+            <div class="card-preview">
+              <img class="preview-img" src="preview-ceo.webp" alt="법인CEO컨설팅" loading="lazy">
+              <div class="card-preview-bg" style="background:linear-gradient(135deg,#1e1b4b 0%,#4338ca 55%,#fbbf24 100%);opacity:0.35;"></div>
+              <div class="deco-circle c1"></div>
+              <div class="deco-circle c2"></div>
+              <div class="deco-grid"></div>
+            </div>
+            <div class="card-body">
+              <div class="card-title">법인 CEO 컨설팅 <i class="fas fa-arrow-right arrow"></i></div>
+              <div class="card-desc card-desc-keep">법인 재무·세금 진단부터<br class="card-desc-br"> 절세 설계까지 계산합니다.</div>
+              <div class="card-tags"><span>가지급금</span><span>이익소각</span><span>급여·배당</span><span>특정법인</span><span>차명주식</span></div>
+            </div>
+          </div>
+          </template>
+
           <!-- 카드 3: 통합 계산기 -->
           <div class="tool-card glow-target" onclick="_trackOpen('통합 금융 계산기','https://pro-financecalculator.vercel.app/')">
             <div class="glow-border"></div>
@@ -660,6 +681,42 @@ body{font-family:'Pretendard',sans-serif;background:#000;color:#e2e8f0;overflow:
     <div class="footer fade-up" style="animation-delay:1.3s;">&copy; 2026 Pro Enterprise AI. All rights reserved.</div>
   </div>
 </div>
+
+<script>
+/* ═══════════════════════════════════════
+   FEATURE_CEO_CARD — 법인 CEO 컨설팅 카드 (독립 블록, 2026-11-04)
+   DB 영업관리 다음 자리에 카드 추가 + 히어로 "8대" 제목·서브 문장 교체.
+   ⚠️ 캐러셀 초기화(아래 Aurora 스크립트)가 카드 수를 세기 전에 실행돼야 하므로 이 위치(히어로 직후·동기 실행) 유지.
+   Flag=false 시 template만 제거 → 기존 7장·7대 문구 그대로 (영향 0)
+   ═══════════════════════════════════════ */
+var FEATURE_CEO_CARD = false; // 검증 전. 옵트인 테스트: sessionStorage._flag_ceo_card='true' 후 새로고침
+
+function _isCeoCardOn() {
+  try {
+    var o = sessionStorage.getItem('_flag_ceo_card');
+    if (o === 'true') return true;
+    if (o === 'false') return false;
+  } catch (_) { /* sessionStorage 차단 환경 → Flag 기본값 */ }
+  return FEATURE_CEO_CARD;
+}
+
+(function () {
+  var tpl = document.getElementById('ceoCardTpl');
+  if (!tpl) return;
+  var parent = tpl.parentNode;
+  if (_isCeoCardOn() && tpl.content) {
+    parent.insertBefore(document.importNode(tpl.content, true), tpl);
+    var t2 = document.querySelector('.hero-title .t2');
+    if (t2) t2.textContent = '8대 핵심 AI 시스템';
+    var sub = document.querySelector('.hero-sub');
+    if (sub) {
+      sub.innerHTML = '보장 분석부터 DB 영업관리, 법인 CEO 컨설팅,<br class="hero-sub-br"> 통합 금융 계산기, 전문 비서 챗봇까지.';
+      sub.classList.add('hero-sub-wide');
+    }
+  }
+  parent.removeChild(tpl);
+})();
+</script>
 
 <!-- Firebase SDK (compat) -->
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>

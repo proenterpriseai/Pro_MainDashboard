@@ -3,13 +3,14 @@
 ## 🟢 현재 LIVE (이 줄을 배포마다 갱신)
 | 항목 | 값 |
 |---|---|
-| **버전** | **v=20261104a** (법인 CEO 컨설팅 카드 **Flag false** 추가 — 사용자 화면 변화 0. SW 무변경) / 이전 v=20260918a (비번/이메일 셀프서비스 3종 완성) |
-| **코드 커밋** | `a0b46ed` (법인 CEO 카드 flag false, 2026-11-04) / `74f5a18` (flag 2종 true 공개) / `94cbba6` (이메일 찾기) / `00a9630` (이메일 힌트) / `ace37be` (서버 WIF 전환) — 전부 2026-09-18 / 이전: `e3f6321` (SW skipWaiting) / `825753d` (사번 fix) / `331a5f6` (change-email 도구) — 이후 docs 커밋은 LIVE 동작 무변경 |
-| **SW 캐시** | `pro-ai-v15` (sw.js) |
+| **버전** | **v=20261104b** (🚀 **법인 CEO 컨설팅 카드 true 700명 공개** — 8대·카드 클릭=접속 코드 창, 대표님 명시 승인 2026-11-04) / 이전 v=20260918a (비번/이메일 셀프서비스 3종 완성) |
+| **코드 커밋** | `fde31b5` (법인 CEO 카드 true 공개, 2026-11-04) / `76983b7`·`b6b9c96` (접속 코드 창) / `a0b46ed` (카드 flag false) / `74f5a18` (flag 2종 true 공개) / `94cbba6` (이메일 찾기) / `00a9630` (이메일 힌트) / `ace37be` (서버 WIF 전환) — 전부 2026-09-18 / 이전: `e3f6321` (SW skipWaiting) / `825753d` (사번 fix) / `331a5f6` (change-email 도구) — 이후 docs 커밋은 LIVE 동작 무변경 |
+| **SW 캐시** | `pro-ai-v16` (sw.js, 2026-11-04 `preview-ceo.webp` 추가) |
 | **배포** | GitHub `proenterpriseai/Pro_MainDashboard` → Vercel `pro-dashboards.com` (push 시 자동, ~30초) |
-| **활성 Flag** | `FEATURE_SMS_PW_RESET=true` / `FEATURE_SMS_PW_EMAIL_HINT=true` / `FEATURE_EMAIL_FIND=true` (3종 700명 공개 — 뒤 2종 대표님 승인 2026-09-18) / `FEATURE_TEMP_PASSWORD=false`(미배포·조직정책 차단) / **`FEATURE_CEO_CARD=false`**(2026-11-04, 실장 옵트인 실측 대기) |
+| **활성 Flag** | `FEATURE_SMS_PW_RESET=true` / `FEATURE_SMS_PW_EMAIL_HINT=true` / `FEATURE_EMAIL_FIND=true` (3종 700명 공개 — 뒤 2종 대표님 승인 2026-09-18) / `FEATURE_TEMP_PASSWORD=false`(미배포·조직정책 차단) / **`FEATURE_CEO_CARD=true`**(2026-11-04 700명 공개, 대표님 명시 승인 · 긴급 개인 옵트아웃 `sessionStorage._flag_ceo_card='false'`, 전체 롤백 = flag false 재배포) |
 | **사용자 규모** | users 156건 / employee_lookup 151건 (2026-07-28 실측) |
 
+- 2026-11-04 `fde31b5` — 🚀 **법인 CEO 컨설팅 카드 true 700명 공개**(대표님 명시 승인·실장 옵트인 실측 PC·콘솔 users 규칙 확인·트리플 A GO): flag true + SW `pro-ai-v16`(+`preview-ceo.webp`) + meta/og/twitter description에 '법인 CEO 컨설팅'. 라이브 확인 = flag true·og 문구·SW v16·캐시 12경로 200·코드 API 401·SMS NO_MATCH. ▶카카오 OG 캐시 초기화(실장). `3f1a780` firestore.rules 콘솔 동기화·비사이트 파일 배포 제외.
 - 2026-11-04 `76983b7` — **카드 클릭 = 접속 코드 창 + `api/ceo-access-code.js`**(Flag false 유지, 트리플 A 조건부 GO → 🟡2 반영). 아래 "법인 CEO 컨설팅 카드" 섹션 참조. `e1c0187` 카드 설명 문구 변경.
 - 2026-11-04 `a0b46ed` — **법인 CEO 컨설팅 카드 Flag false**(`FEATURE_CEO_CARD`, 트리플 A 조건부 GO → 조건 해소). 아래 "법인 CEO 컨설팅 카드" 섹션 참조.
 
@@ -57,7 +58,7 @@
 
 | 법인 CEO 컨설팅 (`FEATURE_CEO_CARD`, 현재 false) | `https://proceoconsulting.com` (접속 코드 게이트 — 카드 클릭 시 코드 화면 먼저) |
 
-## 🏢 법인 CEO 컨설팅 카드 (2026-11-04 `a0b46ed`, **Flag false**)
+## 🏢 법인 CEO 컨설팅 카드 (2026-11-04 `a0b46ed` → **`fde31b5` true 공개**)
 - **구조**: `#carouselTrack` 안 DB 영업관리 다음에 `<template id="ceoCardTpl">`. 히어로 직후 독립 `<script>`가 flag on이면 template을 펼치고 히어로 `.t2`→"8대 핵심 AI 시스템", `.hero-sub`→"보장 분석부터 DB 영업관리, 법인 CEO 컨설팅,`<br class="hero-sub-br">` 통합 금융 계산기, 전문 비서 챗봇까지." + `.hero-sub-wide`(max-width 560px). off면 template 제거 → 기존과 동일.
   - ⛔ **이 스크립트 위치 이동 금지** — 캐러셀 IIFE(`REAL_COUNT`·클론·점·glow targets)가 카드를 세기 **전에** 동기 실행돼야 함. 캐러셀 JS는 카드 수 하드코딩 없음(DOM 개수 기반).
   - `.hero-sub-wide` 이유: 새 문장 16px 기준 533px > 기존 `max-width:500px` → 데스크톱 2줄 + "챗/봇까지" 절단. 560px로 1줄 유지.

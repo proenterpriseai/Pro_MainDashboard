@@ -90,6 +90,14 @@ body{font-family:'Pretendard',sans-serif;background:#000;color:#e2e8f0;overflow:
 .hero-sub-br{display:none;}
 /* FEATURE_CEO_CARD 전용 (2026-11-04) — 법인 CEO 컨설팅이 들어간 서브 문장(16px 기준 533px)을 데스크톱 1줄로 유지. Flag off면 이 클래스를 붙이지 않음 */
 .hero-sub-wide{max-width:560px;}
+/* FEATURE_CEO_CARD 접속 코드 창 (2026-11-04) — flag off면 이 마크업 자체가 DOM에 없음. 모달 틀은 기존 .pw-modal 재사용 */
+.ceo-access-code-row{display:flex;gap:10px;align-items:stretch;margin-bottom:14px;}
+.ceo-access-code{flex:1;min-width:0;padding:12px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.04);color:#fff;font-size:18px;font-weight:700;letter-spacing:1px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;text-align:center;user-select:all;-webkit-user-select:all;overflow-wrap:anywhere;}
+.ceo-access-code.loading{font-size:13px;font-weight:500;letter-spacing:0;color:rgba(255,255,255,0.45);font-family:inherit;user-select:none;-webkit-user-select:none;}
+.ceo-access-code-row .ceo-access-copy{flex:0 0 auto;padding:0 16px;}
+.ceo-access-note{font-size:12px;margin-bottom:6px;}
+.ceo-access-btns .pw-modal-btn.cancel{flex:0 0 30%;}
+.ceo-access-btns .pw-modal-btn.confirm{word-break:keep-all;}
 
 /* ── 캐러셀 ── */
 .carousel-wrapper{position:relative;flex-shrink:0;margin-top:auto;padding:0 40px;}
@@ -570,7 +578,7 @@ body{font-family:'Pretendard',sans-serif;background:#000;color:#e2e8f0;overflow:
 
           <!-- 카드 2-1: 법인 CEO 컨설팅 (FEATURE_CEO_CARD — template이라 Flag off면 렌더·캐러셀 개수 영향 0, on이면 이 자리에 펼침) -->
           <template id="ceoCardTpl">
-          <div class="tool-card glow-target" onclick="_trackOpen('법인 CEO 컨설팅','https://proceoconsulting.com')">
+          <div class="tool-card glow-target" onclick="openCeoAccessModal()">
             <div class="glow-border"></div>
             <div class="card-preview">
               <img class="preview-img" src="preview-ceo.webp" alt="법인CEO컨설팅" loading="lazy">
@@ -682,12 +690,34 @@ body{font-family:'Pretendard',sans-serif;background:#000;color:#e2e8f0;overflow:
   </div>
 </div>
 
+<!-- 법인 CEO 컨설팅 접속 코드 창 (FEATURE_CEO_CARD — flag on일 때만 body에 붙임). 코드는 열 때마다 서버(/api/ceo-access-code)에서 받음 — HTML에 코드 기재 금지 -->
+<template id="ceoAccessModalTpl">
+<div class="pw-modal-overlay" id="ceoAccessModal" role="dialog" aria-modal="true" aria-labelledby="ceoAccessTitle">
+  <div class="pw-modal change">
+    <div class="pw-modal-icon"><i class="fas fa-key"></i></div>
+    <div class="pw-modal-title" id="ceoAccessTitle">법인 CEO 컨설팅 접속 코드</div>
+    <div class="pw-modal-subtitle">코드를 복사해 접속 화면에 붙여넣으세요.</div>
+    <div class="pw-modal-error" id="ceoAccessError"></div>
+    <div class="ceo-access-code-row">
+      <div class="ceo-access-code loading" id="ceoAccessCode">불러오는 중…</div>
+      <button class="pw-modal-btn cancel ceo-access-copy" id="ceoAccessCopyBtn" onclick="_ceoAccessCopy()" disabled><i class="fas fa-copy"></i> 복사</button>
+    </div>
+    <div class="pw-modal-desc ceo-access-note">처음 한 번 입력하면 이 기기에서 30일간 유지됩니다.<br>입장 후 사이드바 <b>서버 동기화</b>에서 사번으로 로그인하면 고객이 본인 계정에 저장됩니다.</div>
+    <div class="pw-modal-btns ceo-access-btns">
+      <button class="pw-modal-btn cancel" onclick="closeCeoAccessModal()">닫기</button>
+      <button class="pw-modal-btn confirm" onclick="_ceoAccessOpenSite()"><i class="fas fa-arrow-up-right-from-square"></i> 법인 CEO 컨설팅 열기</button>
+    </div>
+  </div>
+</div>
+</template>
+
 <script>
 /* ═══════════════════════════════════════
    FEATURE_CEO_CARD — 법인 CEO 컨설팅 카드 (독립 블록, 2026-11-04)
    DB 영업관리 다음 자리에 카드 추가 + 히어로 "8대" 제목·서브 문장 교체.
+   카드 클릭 = 접속 코드 창(코드·복사·열기). 코드는 /api/ceo-access-code가 대시보드 승인자에게만 반환.
    ⚠️ 캐러셀 초기화(아래 Aurora 스크립트)가 카드 수를 세기 전에 실행돼야 하므로 이 위치(히어로 직후·동기 실행) 유지.
-   Flag=false 시 template만 제거 → 기존 7장·7대 문구 그대로 (영향 0)
+   Flag=false 시 template 2개만 제거 → 기존 7장·7대 문구 그대로 (영향 0)
    ═══════════════════════════════════════ */
 var FEATURE_CEO_CARD = false; // 검증 전. 옵트인 테스트: sessionStorage._flag_ceo_card='true' 후 새로고침
 
@@ -715,7 +745,127 @@ function _isCeoCardOn() {
     }
   }
   parent.removeChild(tpl);
+
+  var mtpl = document.getElementById('ceoAccessModalTpl');
+  if (!mtpl) return;
+  if (_isCeoCardOn() && mtpl.content) {
+    document.body.appendChild(document.importNode(mtpl.content, true));
+    var overlay = document.getElementById('ceoAccessModal');
+    if (overlay) {
+      overlay.addEventListener('click', function (e) { if (e.target === overlay) closeCeoAccessModal(); });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && overlay.classList.contains('show')) closeCeoAccessModal();
+      });
+    }
+  }
+  mtpl.parentNode.removeChild(mtpl);
 })();
+
+var CEO_SITE_URL = 'https://proceoconsulting.com';
+var _ceoAccessGen = 0; // 창을 닫거나 다시 열면 증가 — 늦게 도착한 응답이 새 창을 덮어쓰지 않게(세대 가드)
+var _ceoAccessAuthWatch = false; // 로그아웃 시 창 닫기 리스너(첫 열기 때 1회 등록 — 기존 doLogout 무수정)
+
+function _ceoAccessErrorMsg(code) {
+  /* 상수 문구만 사용 (서버 문자열 표시 금지) */
+  if (code === 'NOT_APPROVED') return '승인된 계정만 접속 코드를 볼 수 있습니다.';
+  if (code === 'NOT_CONFIGURED') return '접속 코드가 아직 등록되지 않았습니다. 관리자에게 문의해 주세요.';
+  if (code === 'AUTH_REQUIRED' || code === 'AUTH_INVALID') return '로그인 정보가 만료되었습니다. 새로고침 후 다시 시도해 주세요.';
+  return '접속 코드를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.';
+}
+
+function _ceoAccessSetState(text, loading, errorMsg) {
+  var codeEl = document.getElementById('ceoAccessCode');
+  var copyBtn = document.getElementById('ceoAccessCopyBtn');
+  var errEl = document.getElementById('ceoAccessError');
+  if (codeEl) {
+    codeEl.textContent = text;
+    codeEl.classList.toggle('loading', !!loading);
+  }
+  if (copyBtn) {
+    copyBtn.disabled = !!loading;
+    copyBtn.innerHTML = '<i class="fas fa-copy"></i> 복사';
+  }
+  if (errEl) {
+    errEl.textContent = errorMsg || '';
+    errEl.style.display = errorMsg ? 'block' : 'none';
+  }
+}
+
+function openCeoAccessModal() {
+  var overlay = document.getElementById('ceoAccessModal');
+  if (!overlay) { _trackOpen('법인 CEO 컨설팅', CEO_SITE_URL); return; }
+  var gen = ++_ceoAccessGen;
+  _ceoAccessSetState('불러오는 중…', true, '');
+  overlay.classList.add('show');
+  var user = null;
+  try {
+    user = firebase.auth().currentUser;
+    if (!_ceoAccessAuthWatch) {
+      _ceoAccessAuthWatch = true;
+      firebase.auth().onAuthStateChanged(function (u) { if (!u) closeCeoAccessModal(); });
+    }
+  } catch (_) { /* SDK 미로드 */ }
+  if (!user) {
+    _ceoAccessSetState('—', true, _ceoAccessErrorMsg('AUTH_REQUIRED'));
+    return;
+  }
+  user.getIdToken().then(function (token) {
+    return fetch('/api/ceo-access-code', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } });
+  }).then(function (resp) {
+    return resp.json().catch(function () { return {}; }).then(function (data) { return { status: resp.status, data: data }; });
+  }).then(function (r) {
+    if (gen !== _ceoAccessGen) return;
+    if (r.status === 200 && r.data && r.data.ok === true && typeof r.data.code === 'string' && r.data.code) {
+      _ceoAccessSetState(r.data.code, false, '');
+    } else {
+      _ceoAccessSetState('—', true, _ceoAccessErrorMsg(r.data && r.data.code));
+    }
+  }).catch(function () {
+    if (gen !== _ceoAccessGen) return;
+    _ceoAccessSetState('—', true, _ceoAccessErrorMsg(''));
+  });
+}
+
+function closeCeoAccessModal() {
+  _ceoAccessGen++;
+  var overlay = document.getElementById('ceoAccessModal');
+  if (overlay) overlay.classList.remove('show');
+  _ceoAccessSetState('불러오는 중…', true, ''); // 닫으면 코드를 화면에서 지움
+}
+
+function _ceoAccessCopy() {
+  var codeEl = document.getElementById('ceoAccessCode');
+  var copyBtn = document.getElementById('ceoAccessCopyBtn');
+  if (!codeEl || !copyBtn || copyBtn.disabled) return;
+  var code = codeEl.textContent;
+  var gen = _ceoAccessGen;
+  function done(ok) {
+    if (gen !== _ceoAccessGen) return;
+    copyBtn.innerHTML = ok ? '<i class="fas fa-check"></i> 복사됨' : '<i class="fas fa-copy"></i> 길게 눌러 복사';
+    setTimeout(function () {
+      if (gen === _ceoAccessGen && !copyBtn.disabled) copyBtn.innerHTML = '<i class="fas fa-copy"></i> 복사';
+    }, 2000);
+  }
+  function fallback() {
+    try {
+      var range = document.createRange();
+      range.selectNodeContents(codeEl);
+      var sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+      done(document.execCommand('copy'));
+    } catch (_) { done(false); }
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(code).then(function () { done(true); }, fallback);
+  } else {
+    fallback();
+  }
+}
+
+function _ceoAccessOpenSite() {
+  _trackOpen('법인 CEO 컨설팅', CEO_SITE_URL);
+}
 </script>
 
 <!-- Firebase SDK (compat) -->

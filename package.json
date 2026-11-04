@@ -5,7 +5,7 @@
   "description": "Pro Enterprise AI Main Dashboard - Verification Loop",
   "scripts": {
     "lint": "eslint --no-fix --max-warnings 0 .",
-    "test": "node --test tests/unit-tests.js",
+    "test": "node --test tests/unit-tests.js tests/ceo-access-tests.js",
     "verify": "npm run lint && npm run test"
   },
   "devDependencies": {

@@ -91,10 +91,12 @@ body{font-family:'Pretendard',sans-serif;background:#000;color:#e2e8f0;overflow:
 /* FEATURE_CEO_CARD 전용 (2026-11-04) — 법인 CEO 컨설팅이 들어간 서브 문장(16px 기준 533px)을 데스크톱 1줄로 유지. Flag off면 이 클래스를 붙이지 않음 */
 .hero-sub-wide{max-width:560px;}
 /* FEATURE_CEO_CARD 접속 코드 창 (2026-11-04) — flag off면 이 마크업 자체가 DOM에 없음. 모달 틀은 기존 .pw-modal 재사용 */
-.ceo-access-code-row{display:flex;gap:10px;align-items:stretch;margin-bottom:14px;}
-.ceo-access-code{flex:1;min-width:0;padding:12px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.04);color:#fff;font-size:18px;font-weight:700;letter-spacing:1px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;text-align:center;user-select:all;-webkit-user-select:all;overflow-wrap:anywhere;}
+#ceoAccessModal .pw-modal{max-width:min(480px, calc(100% - 24px));}
+.ceo-access-code-row{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;}
+.ceo-access-code{min-width:0;padding:12px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.04);color:#fff;font-size:18px;font-weight:700;letter-spacing:0.5px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;text-align:center;user-select:all;-webkit-user-select:all;white-space:nowrap;overflow:hidden;}
+.ceo-access-code.wrap{white-space:normal;overflow-wrap:anywhere;}
 .ceo-access-code.loading{font-size:13px;font-weight:500;letter-spacing:0;color:rgba(255,255,255,0.45);font-family:inherit;user-select:none;-webkit-user-select:none;}
-.ceo-access-code-row .ceo-access-copy{flex:0 0 auto;padding:0 16px;}
+.ceo-access-code-row .ceo-access-copy{flex:0 0 auto;padding:10px 16px;min-height:40px;}
 .ceo-access-note{font-size:12px;margin-bottom:6px;}
 .ceo-access-btns .pw-modal-btn.cancel{flex:0 0 30%;}
 .ceo-access-btns .pw-modal-btn.confirm{word-break:keep-all;}
@@ -756,6 +758,10 @@ function _isCeoCardOn() {
       document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape' && overlay.classList.contains('show')) closeCeoAccessModal();
       });
+      window.addEventListener('resize', function () {
+        var c = document.getElementById('ceoAccessCode');
+        if (c && overlay.classList.contains('show')) _ceoAccessFit(c);
+      });
     }
   }
   mtpl.parentNode.removeChild(mtpl);
@@ -773,6 +779,21 @@ function _ceoAccessErrorMsg(code) {
   return '접속 코드를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.';
 }
 
+/* 코드를 한 줄에 맞춤: 18px부터 1px씩 줄여 칸에 들어가면 멈춤(작아지면 자간 0), 10px로도 넘치면 줄바꿈 허용(글자 숨김 방지) */
+function _ceoAccessFit(codeEl) {
+  codeEl.style.fontSize = '';
+  codeEl.style.letterSpacing = '';
+  codeEl.classList.remove('wrap');
+  if (codeEl.classList.contains('loading') || !codeEl.clientWidth) return;
+  var size = 18;
+  while (codeEl.scrollWidth > codeEl.clientWidth && size > 10) {
+    size -= 1;
+    codeEl.style.fontSize = size + 'px';
+    if (size <= 15) codeEl.style.letterSpacing = '0';
+  }
+  if (codeEl.scrollWidth > codeEl.clientWidth) codeEl.classList.add('wrap');
+}
+
 function _ceoAccessSetState(text, loading, errorMsg) {
   var codeEl = document.getElementById('ceoAccessCode');
   var copyBtn = document.getElementById('ceoAccessCopyBtn');
@@ -780,6 +801,7 @@ function _ceoAccessSetState(text, loading, errorMsg) {
   if (codeEl) {
     codeEl.textContent = text;
     codeEl.classList.toggle('loading', !!loading);
+    _ceoAccessFit(codeEl);
   }
   if (copyBtn) {
     copyBtn.disabled = !!loading;

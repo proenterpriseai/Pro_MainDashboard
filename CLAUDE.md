@@ -3,12 +3,14 @@
 ## 🟢 현재 LIVE (이 줄을 배포마다 갱신)
 | 항목 | 값 |
 |---|---|
-| **버전** | **v=20260918a** (비번/이메일 셀프서비스 3종 완성 — WIF+이메일 힌트+이메일 찾기. SW 캐시·에셋 무변경이라 CACHE bump 없음, HTML은 네트워크 우선으로 즉시 반영) |
-| **코드 커밋** | `74f5a18` (flag 2종 true 공개) / `94cbba6` (이메일 찾기) / `00a9630` (이메일 힌트) / `ace37be` (서버 WIF 전환) — 전부 2026-09-18 / 이전: `e3f6321` (SW skipWaiting) / `825753d` (사번 fix) / `331a5f6` (change-email 도구) — 이후 docs 커밋은 LIVE 동작 무변경 |
+| **버전** | **v=20261104a** (법인 CEO 컨설팅 카드 **Flag false** 추가 — 사용자 화면 변화 0. SW 무변경) / 이전 v=20260918a (비번/이메일 셀프서비스 3종 완성) |
+| **코드 커밋** | `a0b46ed` (법인 CEO 카드 flag false, 2026-11-04) / `74f5a18` (flag 2종 true 공개) / `94cbba6` (이메일 찾기) / `00a9630` (이메일 힌트) / `ace37be` (서버 WIF 전환) — 전부 2026-09-18 / 이전: `e3f6321` (SW skipWaiting) / `825753d` (사번 fix) / `331a5f6` (change-email 도구) — 이후 docs 커밋은 LIVE 동작 무변경 |
 | **SW 캐시** | `pro-ai-v15` (sw.js) |
 | **배포** | GitHub `proenterpriseai/Pro_MainDashboard` → Vercel `pro-dashboards.com` (push 시 자동, ~30초) |
-| **활성 Flag** | `FEATURE_SMS_PW_RESET=true` / `FEATURE_SMS_PW_EMAIL_HINT=true` / `FEATURE_EMAIL_FIND=true` (3종 700명 공개 — 뒤 2종 대표님 승인 2026-09-18) / `FEATURE_TEMP_PASSWORD=false`(미배포·조직정책 차단) |
+| **활성 Flag** | `FEATURE_SMS_PW_RESET=true` / `FEATURE_SMS_PW_EMAIL_HINT=true` / `FEATURE_EMAIL_FIND=true` (3종 700명 공개 — 뒤 2종 대표님 승인 2026-09-18) / `FEATURE_TEMP_PASSWORD=false`(미배포·조직정책 차단) / **`FEATURE_CEO_CARD=false`**(2026-11-04, 실장 옵트인 실측 대기) |
 | **사용자 규모** | users 156건 / employee_lookup 151건 (2026-07-28 실측) |
+
+- 2026-11-04 `a0b46ed` — **법인 CEO 컨설팅 카드 Flag false**(`FEATURE_CEO_CARD`, 트리플 A 조건부 GO → 조건 해소). 아래 "법인 CEO 컨설팅 카드" 섹션 참조.
 
 - 2026-09-18 `74f5a18` — **이메일 힌트+이메일 찾기 flag true 700명 공개**(대표님 명시 승인, 실장 옵트인 실측 PC+모바일 완료, 라이브 grep으로 두 flag=true 확인).
 - 2026-09-18 `94cbba6` — **이메일 찾기 Flag false**(`FEATURE_EMAIL_FIND`, 트리플 A GO): 로그인 화면 "이메일 찾기" 링크(기본 숨김) → 사번+이름 → SMS OTP → 이메일 표시(비번 무변경). 서버 `confirm-email` 액션 — 기존 OTP 인프라 재사용(발송 한도·시도 5회 두 액션 합산 공유). "이메일 잊음"과 "비번 잊음"의 독립 셀프서비스화. 라이브 프로브: request=`NO_MATCH`·confirm-email=`NO_REQUEST` 확인.
@@ -51,6 +53,17 @@
 | 예상 보험금 산출 전문가 | `https://gemini.google.com/gem/15CfHW2qR7KKsa2KvSoJutvykQ3Rr_RjT?usp=sharing` |
 | 민원 분쟁조정 전문가 | `https://gemini.google.com/gem/1jcmQ743PuN10BT_N88nAuPnESu4mWH_D?usp=sharing` |
 | 금융 & 보험 코치 | `https://gemini.google.com/gem/1vUjZNt7m7jLAxJ3ICOv5tI4WIqssmX0H?usp=sharing` |
+
+| 법인 CEO 컨설팅 (`FEATURE_CEO_CARD`, 현재 false) | `https://proceoconsulting.com` (접속 코드 게이트 — 카드 클릭 시 코드 화면 먼저) |
+
+## 🏢 법인 CEO 컨설팅 카드 (2026-11-04 `a0b46ed`, **Flag false**)
+- **구조**: `#carouselTrack` 안 DB 영업관리 다음에 `<template id="ceoCardTpl">`. 히어로 직후 독립 `<script>`가 flag on이면 template을 펼치고 히어로 `.t2`→"8대 핵심 AI 시스템", `.hero-sub`→"보장 분석부터 DB 영업관리, 법인 CEO 컨설팅,`<br class="hero-sub-br">` 통합 금융 계산기, 전문 비서 챗봇까지." + `.hero-sub-wide`(max-width 560px). off면 template 제거 → 기존과 동일.
+  - ⛔ **이 스크립트 위치 이동 금지** — 캐러셀 IIFE(`REAL_COUNT`·클론·점·glow targets)가 카드를 세기 **전에** 동기 실행돼야 함. 캐러셀 JS는 카드 수 하드코딩 없음(DOM 개수 기반).
+  - `.hero-sub-wide` 이유: 새 문장 16px 기준 533px > 기존 `max-width:500px` → 데스크톱 2줄 + "챗/봇까지" 절단. 560px로 1줄 유지.
+- **이미지** `preview-ceo.webp`(800×448, 19KB) — 절차적 렌더(빌딩 숲 홀로그램+금빛 우상향 그래프). 재생성 = `python -X utf8 _make-ceo-preview.py preview-ceo.webp`(배포 제외 `_*.py`). 카드 크롭(데스크톱 중앙 64%·모바일 85%) 안에 피사체를 둠.
+- **옵트인 실측**: `sessionStorage.setItem('_flag_ceo_card','true')` 후 새로고침 / 해제 `removeItem`.
+- **실측(로컬, 2026-11-04)**: off 7장(DOM 14)·점 7·7대 / on 8장(DOM 16)·점 8·8대·이미지 로드, 1440 = 서브 1줄·카드 상단 556.9 동일, 375 = 서브 2줄(높이·카드 상단 off와 동일 → 4구간 행간 세트 불변)·카드 설명 2줄·가로 넘침 0, 무한 루프 8장 순환·점 일치.
+- **▶ true 공개 시 같은 커밋에서 함께**: ① `sw.js` `urlsToCache`에 `'/preview-ceo.webp'` 추가 + `CACHE_NAME` bump(v15→v16) — **webp가 배포돼 있어야 함(404면 SW install 실패)** ② meta description·og:description·twitter:description(7·12·21행 부근) 문구에 법인 CEO 컨설팅 반영 검토 → 카카오 OG 캐시 초기화 ③ 640 블록 "해당 5개 카드만" 주석 → 6개 ④ GA `system_open`에 '법인 CEO 컨설팅' 신규 값 ⑤ 대표님 명시 승인 + 트리플 A. 접속 코드 안내 동반 필요(코드 모르면 진입 불가).
 
 ## ⚠️ 도메인 규칙
 - 보장분석/DB영업관리: 반드시 `.com` 도메인 사용 (`.vercel.app` 금지)

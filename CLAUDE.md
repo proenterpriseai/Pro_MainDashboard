@@ -10,6 +10,7 @@
 | **활성 Flag** | `FEATURE_SMS_PW_RESET=true` / `FEATURE_SMS_PW_EMAIL_HINT=true` / `FEATURE_EMAIL_FIND=true` (3종 700명 공개 — 뒤 2종 대표님 승인 2026-09-18) / `FEATURE_TEMP_PASSWORD=false`(미배포·조직정책 차단) / **`FEATURE_CEO_CARD=false`**(2026-11-04, 실장 옵트인 실측 대기) |
 | **사용자 규모** | users 156건 / employee_lookup 151건 (2026-07-28 실측) |
 
+- 2026-11-04 `76983b7` — **카드 클릭 = 접속 코드 창 + `api/ceo-access-code.js`**(Flag false 유지, 트리플 A 조건부 GO → 🟡2 반영). 아래 "법인 CEO 컨설팅 카드" 섹션 참조. `e1c0187` 카드 설명 문구 변경.
 - 2026-11-04 `a0b46ed` — **법인 CEO 컨설팅 카드 Flag false**(`FEATURE_CEO_CARD`, 트리플 A 조건부 GO → 조건 해소). 아래 "법인 CEO 컨설팅 카드" 섹션 참조.
 
 - 2026-09-18 `74f5a18` — **이메일 힌트+이메일 찾기 flag true 700명 공개**(대표님 명시 승인, 실장 옵트인 실측 PC+모바일 완료, 라이브 grep으로 두 flag=true 확인).
@@ -60,10 +61,15 @@
 - **구조**: `#carouselTrack` 안 DB 영업관리 다음에 `<template id="ceoCardTpl">`. 히어로 직후 독립 `<script>`가 flag on이면 template을 펼치고 히어로 `.t2`→"8대 핵심 AI 시스템", `.hero-sub`→"보장 분석부터 DB 영업관리, 법인 CEO 컨설팅,`<br class="hero-sub-br">` 통합 금융 계산기, 전문 비서 챗봇까지." + `.hero-sub-wide`(max-width 560px). off면 template 제거 → 기존과 동일.
   - ⛔ **이 스크립트 위치 이동 금지** — 캐러셀 IIFE(`REAL_COUNT`·클론·점·glow targets)가 카드를 세기 **전에** 동기 실행돼야 함. 캐러셀 JS는 카드 수 하드코딩 없음(DOM 개수 기반).
   - `.hero-sub-wide` 이유: 새 문장 16px 기준 533px > 기존 `max-width:500px` → 데스크톱 2줄 + "챗/봇까지" 절단. 560px로 1줄 유지.
+- **카드 클릭 = 접속 코드 창**(`76983b7`): `openCeoAccessModal()` → 대시보드 위 창(코드·[복사]·[법인 CEO 컨설팅 열기]·30일 유지·서버 동기화 안내). 창 마크업 `<template id="ceoAccessModalTpl">`은 flag on일 때만 body에 붙임. 코드는 **열 때마다 서버에서 받음**(HTML에 코드 기재 금지 — index.html은 로그인 없이 내려받힘), 닫기·로그아웃(onAuthStateChanged, 기존 doLogout 무수정) 시 화면에서 지움, 세대 가드.
+  - **서버 `api/ceo-access-code.js`**(POST, Bearer Firebase ID 토큰): RS256 서명(Google securetoken 공개 인증서, 캐시)·aud/iss/exp/iat/sub 검증 → **본인 토큰으로** Firestore `users/{uid}.status` 읽기(보안 규칙 적용) → `approved`만 env **`CEO_ACCESS_CODE`** 반환. 응답 401 AUTH_REQUIRED/AUTH_INVALID · 403 NOT_APPROVED/FORBIDDEN_ORIGIN · 503 NOT_CONFIGURED(env 없음)/UNAVAILABLE. no-store, 토큰·코드 로그 0. WIF·서비스 계정 미사용(sms-pw-reset 무수정).
+  - ⛔ **보안 의존성**: 콘솔 users 규칙이 create=`role:'user'+status:'pending'`만·본인 role/status 변경 불가(2026-06-06 게시)여야 함 — 레포 `firestore.rules`는 이와 다른 옛 파일(본인 create/update 무제한·isAdmin=이메일). 콘솔 규칙을 느슨하게 바꾸면 누구나 가입→status approved 자가 작성→코드 획득 가능.
+  - **코드 바꿀 때 = Vercel 두 곳 함께**: 법인 컨설팅 `ACCESS_CODE` + 대시보드 `CEO_ACCESS_CODE` → 각각 Redeploy.
+  - 테스트 `tests/ceo-access-tests.js`(12건, `npm test`에 포함). 라이브 프로브(2026-11-04): 토큰 없음 401·형식 오류 401·위조 서명(클레임 정상) 401(=인증서 조회 성공)·GET 405·다른 출처 403·no-store.
 - **이미지** `preview-ceo.webp`(800×448, 19KB) — 절차적 렌더(빌딩 숲 홀로그램+금빛 우상향 그래프). 재생성 = `python -X utf8 _make-ceo-preview.py preview-ceo.webp`(배포 제외 `_*.py`). 카드 크롭(데스크톱 중앙 64%·모바일 85%) 안에 피사체를 둠.
 - **옵트인 실측**: `sessionStorage.setItem('_flag_ceo_card','true')` 후 새로고침 / 해제 `removeItem`.
 - **실측(로컬, 2026-11-04)**: off 7장(DOM 14)·점 7·7대 / on 8장(DOM 16)·점 8·8대·이미지 로드, 1440 = 서브 1줄·카드 상단 556.9 동일, 375 = 서브 2줄(높이·카드 상단 off와 동일 → 4구간 행간 세트 불변)·카드 설명 2줄·가로 넘침 0, 무한 루프 8장 순환·점 일치.
-- **▶ true 공개 시 같은 커밋에서 함께**: ① `sw.js` `urlsToCache`에 `'/preview-ceo.webp'` 추가 + `CACHE_NAME` bump(v15→v16) — **webp가 배포돼 있어야 함(404면 SW install 실패)** ② meta description·og:description·twitter:description(7·12·21행 부근) 문구에 법인 CEO 컨설팅 반영 검토 → 카카오 OG 캐시 초기화 ③ 640 블록 "해당 5개 카드만" 주석 → 6개 ④ GA `system_open`에 '법인 CEO 컨설팅' 신규 값 ⑤ 대표님 명시 승인 + 트리플 A. 접속 코드 안내 동반 필요(코드 모르면 진입 불가).
+- **▶ true 공개 시 같은 커밋에서 함께**: ① `sw.js` `urlsToCache`에 `'/preview-ceo.webp'` 추가 + `CACHE_NAME` bump(v15→v16) — **webp가 배포돼 있어야 함(404면 SW install 실패)** ② meta description·og:description·twitter:description(7·12·21행 부근) 문구에 법인 CEO 컨설팅 반영 검토 → 카카오 OG 캐시 초기화 ③ 640 블록 "해당 5개 카드만" 주석 → 6개 ④ GA `system_open`에 '법인 CEO 컨설팅' 신규 값 ⑤ 대표님 명시 승인 + 트리플 A ⑥ **대시보드 Vercel env `CEO_ACCESS_CODE` 등록·Redeploy 확인**(없으면 창에 '아직 등록되지 않았습니다') ⑦ **Firebase 콘솔 users 규칙 재확인**(create = status 'pending'만·본인 status 변경 불가) — 트리플 A 🔴 조건.
 
 ## ⚠️ 도메인 규칙
 - 보장분석/DB영업관리: 반드시 `.com` 도메인 사용 (`.vercel.app` 금지)

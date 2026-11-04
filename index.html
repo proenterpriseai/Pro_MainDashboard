@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Pro Enterprise AI</title>
-<meta name="description" content="보장 분석부터 DB 영업관리, 통합 금융 계산기, 전문 비서 챗봇까지">
+<meta name="description" content="보장 분석부터 DB 영업관리, 법인 CEO 컨설팅, 통합 금융 계산기, 전문 비서 챗봇까지">
 <!-- Open Graph (카카오톡/페이스북/링크 미리보기) -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="프로사업단총괄 AI 시스템">
 <meta property="og:title" content="프로사업단총괄 AI 시스템">
-<meta property="og:description" content="보장 분석부터 DB 영업관리, 통합 금융 계산기, 전문 비서 챗봇까지">
+<meta property="og:description" content="보장 분석부터 DB 영업관리, 법인 CEO 컨설팅, 통합 금융 계산기, 전문 비서 챗봇까지">
 <meta property="og:image" content="https://pro-dashboards.com/og-image.png?v=20260418">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -18,7 +18,7 @@
 <!-- Twitter Card -->
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="프로사업단총괄 AI 시스템">
-<meta name="twitter:description" content="보장 분석부터 DB 영업관리, 통합 금융 계산기, 전문 비서 챗봇까지">
+<meta name="twitter:description" content="보장 분석부터 DB 영업관리, 법인 CEO 컨설팅, 통합 금융 계산기, 전문 비서 챗봇까지">
 <meta name="twitter:image" content="https://pro-dashboards.com/og-image.png?v=20260418">
 <!-- Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-NV114K1SQY"></script>
@@ -380,7 +380,7 @@ body{font-family:'Pretendard',sans-serif;background:#000;color:#e2e8f0;overflow:
   .device-info .date{font-size:12px;}
   .device-replace-btn{padding:10px 16px;font-size:13px;min-height:40px;flex-shrink:0;}
 
-  /* ── 카드 설명 어절 경계 줄바꿈 (v=20260805b) ── br 활성 + 해당 5개 카드만 어절 중간 절단 방지.
+  /* ── 카드 설명 어절 경계 줄바꿈 (v=20260805b) ── br 활성 + 해당 6개 카드만(2026-11-04 법인 CEO 컨설팅 추가) 어절 중간 절단 방지.
      ⚠️ keep-all을 `.card-desc` 전체에 걸면 안 됨: '예상 보험금 산출 전문가' 카드는 현재 줄바꿈 유지가 실장님 지시(2026-08-05).
      ⚠️ 이 두 줄은 반드시 이 블록(max-width:640px)에 있어야 함 — 아래 landscape 블록에 넣으면 세로 모드에서 미적용(2026-08-05 실수 이력) */
   .card-desc-br{display:inline;}
@@ -721,7 +721,7 @@ body{font-family:'Pretendard',sans-serif;background:#000;color:#e2e8f0;overflow:
    ⚠️ 캐러셀 초기화(아래 Aurora 스크립트)가 카드 수를 세기 전에 실행돼야 하므로 이 위치(히어로 직후·동기 실행) 유지.
    Flag=false 시 template 2개만 제거 → 기존 7장·7대 문구 그대로 (영향 0)
    ═══════════════════════════════════════ */
-var FEATURE_CEO_CARD = false; // 검증 전. 옵트인 테스트: sessionStorage._flag_ceo_card='true' 후 새로고침
+var FEATURE_CEO_CARD = true; // 700명 공개 (대표님 명시 승인 2026-11-04, 실장 옵트인 실측 완료). 비활성 테스트: sessionStorage._flag_ceo_card='false' 후 새로고침
 
 function _isCeoCardOn() {
   try {

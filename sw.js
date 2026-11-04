@@ -1,4 +1,4 @@
-var CACHE_NAME = 'pro-ai-v15';
+var CACHE_NAME = 'pro-ai-v16';
 var urlsToCache = [
   '/',
   '/index.html',
@@ -10,7 +10,8 @@ var urlsToCache = [
   '/preview-coach.webp',
   '/preview-dispute.webp',
   '/preview-sales.webp',
-  '/preview-insurance.webp'
+  '/preview-insurance.webp',
+  '/preview-ceo.webp'
 ];
 
 self.addEventListener('install', function(event) {

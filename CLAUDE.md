@@ -15,7 +15,7 @@
 
 - 2026-09-18 `74f5a18` — **이메일 힌트+이메일 찾기 flag true 700명 공개**(대표님 명시 승인, 실장 옵트인 실측 PC+모바일 완료, 라이브 grep으로 두 flag=true 확인).
 - 2026-09-18 `94cbba6` — **이메일 찾기 Flag false**(`FEATURE_EMAIL_FIND`, 트리플 A GO): 로그인 화면 "이메일 찾기" 링크(기본 숨김) → 사번+이름 → SMS OTP → 이메일 표시(비번 무변경). 서버 `confirm-email` 액션 — 기존 OTP 인프라 재사용(발송 한도·시도 5회 두 액션 합산 공유). "이메일 잊음"과 "비번 잊음"의 독립 셀프서비스화. 라이브 프로브: request=`NO_MATCH`·confirm-email=`NO_REQUEST` 확인.
-- 2026-09-18 `00a9630` — **로그인 이메일 힌트 Flag false**(`FEATURE_SMS_PW_EMAIL_HINT`, 트리플 A GO): SMS 재설정 성공 화면에 가입 이메일 표시(OTP 통과자에게만 서버 반환, XSS 이스케이프, off=기존과 문자 단위 동일). "가입 이메일 잊음" 셀프서비스화. true=대표님 승인 후. 🟡리뷰 부기: 레포 firestore.rules의 catch-all `if false` 주석 상태 vs 문서 서술 불일치 — 콘솔 실규칙 1회 실사 후보(안전은 default-deny가 보장).
+- 2026-09-18 `00a9630` — **로그인 이메일 힌트 Flag false**(`FEATURE_SMS_PW_EMAIL_HINT`, 트리플 A GO): SMS 재설정 성공 화면에 가입 이메일 표시(OTP 통과자에게만 서버 반환, XSS 이스케이프, off=기존과 문자 단위 동일). "가입 이메일 잊음" 셀프서비스화. true=대표님 승인 후. 🟡리뷰 부기: 레포 firestore.rules의 catch-all `if false` 주석 상태 vs 문서 서술 불일치 — 콘솔 실규칙 1회 실사 후보(안전은 default-deny가 보장). → ✅ 2026-11-04 콘솔 실규칙 확인(catch-all `if false` 활성)·레포 파일 동기화 `3f1a780`.
 - 2026-09-18 `ace37be` — **서버 인증 WIF 전환**(대표님 사전 승인·트리플 A GO): SMS 비번 재설정의 토큰 만료(invalid_rapt) 영구 해결. Vercel OIDC(Team 모드)→GCP Workload Identity Federation→서비스 계정 `vercel-sms-reset@`. 저장 자격증명 0. 라이브 프로브 검증(가짜 사번→`NO_MATCH`). 아래 "SMS 인증 비밀번호 재설정" 섹션 참조.
 - 2026-08-05 `v=20260805c` — **SW 즉시 교체**(`skipWaiting`+`clients.claim`): 700명 전원이 새로고침 1회로 최신 화면. 기존엔 탭·PWA를 전부 닫아야 새 SW 활성화. CACHE는 `v15` 유지(에셋 무변화).
 - 2026-08-05 `v=20260805b` — **카드 설명 어절 경계 줄바꿈** 5개(보장분석·DB영업·계산기·코치·민원). `.card-desc-br`(모바일 전용 `<br>`) + `.card-desc-keep{word-break:keep-all}`. ⛔**'예상 보험금 산출 전문가'·'건강검진' 2개는 현행 유지가 실장님 지시** → `keep-all`을 `.card-desc` 전체에 걸지 말 것. CACHE v14→v15.
@@ -63,7 +63,8 @@
   - `.hero-sub-wide` 이유: 새 문장 16px 기준 533px > 기존 `max-width:500px` → 데스크톱 2줄 + "챗/봇까지" 절단. 560px로 1줄 유지.
 - **카드 클릭 = 접속 코드 창**(`76983b7`): `openCeoAccessModal()` → 대시보드 위 창(코드·[복사]·[법인 CEO 컨설팅 열기]·30일 유지·서버 동기화 안내). 창 마크업 `<template id="ceoAccessModalTpl">`은 flag on일 때만 body에 붙임. 코드는 **열 때마다 서버에서 받음**(HTML에 코드 기재 금지 — index.html은 로그인 없이 내려받힘), 닫기·로그아웃(onAuthStateChanged, 기존 doLogout 무수정) 시 화면에서 지움, 세대 가드.
   - **서버 `api/ceo-access-code.js`**(POST, Bearer Firebase ID 토큰): RS256 서명(Google securetoken 공개 인증서, 캐시)·aud/iss/exp/iat/sub 검증 → **본인 토큰으로** Firestore `users/{uid}.status` 읽기(보안 규칙 적용) → `approved`만 env **`CEO_ACCESS_CODE`** 반환. 응답 401 AUTH_REQUIRED/AUTH_INVALID · 403 NOT_APPROVED/FORBIDDEN_ORIGIN · 503 NOT_CONFIGURED(env 없음)/UNAVAILABLE. no-store, 토큰·코드 로그 0. WIF·서비스 계정 미사용(sms-pw-reset 무수정).
-  - ⛔ **보안 의존성**: 콘솔 users 규칙이 create=`role:'user'+status:'pending'`만·본인 role/status 변경 불가(2026-06-06 게시)여야 함 — 레포 `firestore.rules`는 이와 다른 옛 파일(본인 create/update 무제한·isAdmin=이메일). 콘솔 규칙을 느슨하게 바꾸면 누구나 가입→status approved 자가 작성→코드 획득 가능.
+  - ⛔ **보안 의존성**: 콘솔 users 규칙이 create=`role:'user'+status:'pending'`만·본인 role/status 변경 불가·isAdmin=`users.role=='admin'`(2026-06-06 게시, **2026-11-04 실장 콘솔 전문 확인**)이어야 함. 콘솔 규칙을 느슨하게 바꾸면 누구나 가입→status approved 자가 작성→코드 획득 가능.
+  - 📄 레포 `firestore.rules` = **콘솔 게시 규칙 사본**(2026-11-04 `3f1a780` 동기화 — 이전 파일은 06-06 이전 옛 규칙이었음). 실제 적용은 콘솔(firebase.json에 firestore 설정 없음). 콘솔을 바꾸면 이 파일도 갱신. `firestore.rules`·`firebase.json`·`functions/`는 `.vercelignore`로 공개 배포 제외(그 전엔 사이트에서 다운로드됐음).
   - **코드 바꿀 때 = Vercel 두 곳 함께**: 법인 컨설팅 `ACCESS_CODE` + 대시보드 `CEO_ACCESS_CODE` → 각각 Redeploy.
   - 테스트 `tests/ceo-access-tests.js`(12건, `npm test`에 포함). 라이브 프로브(2026-11-04): 토큰 없음 401·형식 오류 401·위조 서명(클레임 정상) 401(=인증서 조회 성공)·GET 405·다른 출처 403·no-store.
 - **이미지** `preview-ceo.webp`(800×448, 19KB) — 절차적 렌더(빌딩 숲 홀로그램+금빛 우상향 그래프). 재생성 = `python -X utf8 _make-ceo-preview.py preview-ceo.webp`(배포 제외 `_*.py`). 카드 크롭(데스크톱 중앙 64%·모바일 85%) 안에 피사체를 둠.

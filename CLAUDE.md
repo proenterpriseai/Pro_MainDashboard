@@ -3,13 +3,14 @@
 ## 🟢 현재 LIVE (이 줄을 배포마다 갱신)
 | 항목 | 값 |
 |---|---|
-| **버전** | **v=20261104b** (🚀 **법인 CEO 컨설팅 카드 true 700명 공개** — 8대·카드 클릭=접속 코드 창, 대표님 명시 승인 2026-11-04) / 이전 v=20260918a (비번/이메일 셀프서비스 3종 완성) |
-| **코드 커밋** | `fde31b5` (법인 CEO 카드 true 공개, 2026-11-04) / `76983b7`·`b6b9c96` (접속 코드 창) / `a0b46ed` (카드 flag false) / `74f5a18` (flag 2종 true 공개) / `94cbba6` (이메일 찾기) / `00a9630` (이메일 힌트) / `ace37be` (서버 WIF 전환) — 전부 2026-09-18 / 이전: `e3f6321` (SW skipWaiting) / `825753d` (사번 fix) / `331a5f6` (change-email 도구) — 이후 docs 커밋은 LIVE 동작 무변경 |
+| **버전** | **v=20261120a** (관리자 승인·거부 확인창·결과 알림 + 관리자 표 값 이스케이프, `c96a804`) / 이전 v=20261104b (🚀 **법인 CEO 컨설팅 카드 true 700명 공개** — 8대·카드 클릭=접속 코드 창, 대표님 명시 승인 2026-11-04) / 이전 v=20260918a (비번/이메일 셀프서비스 3종 완성) |
+| **코드 커밋** | `c96a804` (관리자 승인·거부 알림·표 이스케이프, 2026-11-20) / `fde31b5` (법인 CEO 카드 true 공개, 2026-11-04) / `76983b7`·`b6b9c96` (접속 코드 창) / `a0b46ed` (카드 flag false) / `74f5a18` (flag 2종 true 공개) / `94cbba6` (이메일 찾기) / `00a9630` (이메일 힌트) / `ace37be` (서버 WIF 전환) — 전부 2026-09-18 / 이전: `e3f6321` (SW skipWaiting) / `825753d` (사번 fix) / `331a5f6` (change-email 도구) — 이후 docs 커밋은 LIVE 동작 무변경 |
 | **SW 캐시** | `pro-ai-v16` (sw.js, 2026-11-04 `preview-ceo.webp` 추가) |
 | **배포** | GitHub `proenterpriseai/Pro_MainDashboard` → Vercel `pro-dashboards.com` (push 시 자동, ~30초) |
 | **활성 Flag** | `FEATURE_SMS_PW_RESET=true` / `FEATURE_SMS_PW_EMAIL_HINT=true` / `FEATURE_EMAIL_FIND=true` (3종 700명 공개 — 뒤 2종 대표님 승인 2026-09-18) / `FEATURE_TEMP_PASSWORD=false`(미배포·조직정책 차단) / **`FEATURE_CEO_CARD=true`**(2026-11-04 700명 공개, 대표님 명시 승인 · 긴급 개인 옵트아웃 `sessionStorage._flag_ceo_card='false'`, 전체 롤백 = flag false 재배포) |
 | **사용자 규모** | users 156건 / employee_lookup 151건 (2026-07-28 실측) |
 
+- 2026-11-20 `c96a804` — **관리자 승인·거부 확인창·결과 알림 + 관리자 표 값 이스케이프**(실장 사전 승인·독립 리뷰 2회 GO·verify PASS, SW 캐시 무변경). 계기 = 거부 버튼이 성공·실패 모두 무표시. ① `adminApprove`/`adminReject` = 확인창 → 완료 알림 / 실패 알림(`_adminActionError`, `.then(성공, 실패)` 2인자 — 성공 뒤 예외를 실패로 오표시하지 않게) ② `loadAdminUsers` = 관리 버튼 대상은 **항상 문서 ID**(문서 안 `uid` 필드는 본인이 바꿀 수 있어 미신뢰 — ⛔`doc.data().uid`로 되돌리지 말 것) ③ `renderAdminTable` = 사번·이름·핸드폰·이메일 `_adminEsc`, 날짜 `_adminDate`, 기기 수는 배열일 때만, uid 형식 검사 후 onclick 삽입(⛔users 값은 가입자가 쓴 값 — innerHTML에 넣을 때 이스케이프 필수). **잔여(미착수, 실장 결정)**: `filterAdminTable`이 email·사번이 문자열이 아니면 검색 중 예외 / `adminResetDevices`·`adminWithdraw`·`loadAdminUsers` 실패 알림 없음 / 실제 관리자 화면 PC·모바일 실측은 실장 확인 대기.
 - 2026-11-04 `fde31b5` — 🚀 **법인 CEO 컨설팅 카드 true 700명 공개**(대표님 명시 승인·실장 옵트인 실측 PC·콘솔 users 규칙 확인·트리플 A GO): flag true + SW `pro-ai-v16`(+`preview-ceo.webp`) + meta/og/twitter description에 '법인 CEO 컨설팅'. 라이브 확인 = flag true·og 문구·SW v16·캐시 12경로 200·코드 API 401·SMS NO_MATCH. ▶카카오 OG 캐시 초기화(실장). `3f1a780` firestore.rules 콘솔 동기화·비사이트 파일 배포 제외.
 - 2026-11-04 `76983b7` — **카드 클릭 = 접속 코드 창 + `api/ceo-access-code.js`**(Flag false 유지, 트리플 A 조건부 GO → 🟡2 반영). 아래 "법인 CEO 컨설팅 카드" 섹션 참조. `e1c0187` 카드 설명 문구 변경.
 - 2026-11-04 `a0b46ed` — **법인 CEO 컨설팅 카드 Flag false**(`FEATURE_CEO_CARD`, 트리플 A 조건부 GO → 조건 해소). 아래 "법인 CEO 컨설팅 카드" 섹션 참조.

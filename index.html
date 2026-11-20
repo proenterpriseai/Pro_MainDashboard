@@ -1503,7 +1503,8 @@ function closeAdmin() {
 function loadAdminUsers() {
   db.collection('users').get().then(function(snapshot) {
     _allUsers = [];
-    snapshot.forEach(function(doc) { _allUsers.push(doc.data()); });
+    // 관리 버튼의 대상 = 항상 문서 ID (2026-11-20). 문서 안 uid 필드는 비어 있을 수 있고 본인이 바꿀 수도 있어 신뢰하지 않음
+    snapshot.forEach(function(doc) { var d = doc.data(); d.uid = doc.id; _allUsers.push(d); });
     renderAdminStats();
     renderAdminTable(_allUsers);
   });
@@ -1521,6 +1522,17 @@ function renderAdminStats() {
     '<div class="admin-stat"><div class="num" style="color:#f87171;">' + rejected + '</div><div class="lbl">거부됨</div></div>';
 }
 
+/* 관리자 표 값 = 문자로만 표시 (2026-11-20). 이름·이메일 등은 가입자가 쓴 값이라 HTML로 해석되면 안 됨 */
+function _adminEsc(v) {
+  return String(v).replace(/[&<>"']/g, function(c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
+function _adminDate(ts) {
+  try { return ts && typeof ts.toDate === 'function' ? _adminEsc(ts.toDate().toLocaleDateString('ko-KR')) : '-'; }
+  catch (e) { return '-'; }
+}
+
 function renderAdminTable(users) {
   var tbody = document.getElementById('adminTableBody');
   tbody.innerHTML = '';
@@ -1531,12 +1543,15 @@ function renderAdminTable(users) {
   users.forEach(function(u) {
     var badgeClass = u.status === 'pending' ? 'badge-pending' : u.status === 'approved' ? 'badge-approved' : u.status === 'withdrawn' ? 'badge-withdrawn' : 'badge-rejected';
     var badgeText = u.status === 'pending' ? '대기중' : u.status === 'approved' ? '승인됨' : u.status === 'withdrawn' ? '탈퇴' : '거부됨';
-    var deviceCount = (u.devices || []).length;
-    var created = u.createdAt ? (u.createdAt.toDate ? u.createdAt.toDate().toLocaleDateString('ko-KR') : '-') : '-';
-    var lastLogin = u.lastLoginAt ? (u.lastLoginAt.toDate ? u.lastLoginAt.toDate().toLocaleDateString('ko-KR') : '-') : '-';
+    var deviceCount = Array.isArray(u.devices) ? u.devices.length : 0;
+    var created = _adminDate(u.createdAt);
+    var lastLogin = _adminDate(u.lastLoginAt);
     var actions = '';
     if (u.role !== 'admin') {
-      if (u.status === 'withdrawn') {
+      if (!/^[A-Za-z0-9_-]+$/.test(String(u.uid))) {
+        // 버튼의 onclick에 들어가는 값 — 안전한 문자만 허용 (Firebase Auth uid는 영문·숫자)
+        actions = '<span style="color:rgba(255,255,255,0.3);font-size:11px;">ID 형식 오류</span>';
+      } else if (u.status === 'withdrawn') {
         actions = '<span style="color:rgba(255,255,255,0.3);font-size:11px;">탈퇴 처리됨</span>';
       } else {
         if (u.status !== 'approved') actions += '<button class="admin-action approve" onclick="adminApprove(\'' + u.uid + '\')">승인</button>';
@@ -1548,7 +1563,7 @@ function renderAdminTable(users) {
       actions = '<span style="color:rgba(255,255,255,0.3);font-size:11px;">관리자</span>';
     }
     var tr = document.createElement('tr');
-    tr.innerHTML = '<td data-label="사원번호">' + (u.employeeNo || '-') + '</td><td data-label="이름">' + (u.displayName || '-') + '</td><td data-label="핸드폰">' + (u.phone || '-') + '</td><td data-label="이메일">' + u.email + '</td><td data-label="상태"><span class="badge ' + badgeClass + '">' + badgeText + '</span></td><td data-label="기기">' + deviceCount + '/' + MAX_DEVICES + '</td><td data-label="가입일">' + created + '</td><td data-label="최근 접속">' + lastLogin + '</td><td data-label="관리">' + actions + '</td>';
+    tr.innerHTML = '<td data-label="사원번호">' + _adminEsc(u.employeeNo || '-') + '</td><td data-label="이름">' + _adminEsc(u.displayName || '-') + '</td><td data-label="핸드폰">' + _adminEsc(u.phone || '-') + '</td><td data-label="이메일">' + _adminEsc(u.email) + '</td><td data-label="상태"><span class="badge ' + badgeClass + '">' + badgeText + '</span></td><td data-label="기기">' + deviceCount + '/' + MAX_DEVICES + '</td><td data-label="가입일">' + created + '</td><td data-label="최근 접속">' + lastLogin + '</td><td data-label="관리">' + actions + '</td>';
     tbody.appendChild(tr);
   });
 }
@@ -1614,18 +1629,42 @@ function sendApprovalEmail(uid, isApproved) {
   });
 }
 
+/* 승인·거부 공통 안내 (2026-11-20) — 확인창 + 완료/실패 알림. 이전엔 성공·실패 모두 무표시였음 */
+function _adminUserLabel(uid) {
+  for (var i = 0; i < _allUsers.length; i++) {
+    if (_allUsers[i].uid === uid) return _allUsers[i].displayName || _allUsers[i].email || '이 사용자';
+  }
+  return '이 사용자';
+}
+
+function _adminActionError(label, err) {
+  console.error(label + ' 실패:', err);
+  var code = err && err.code ? err.code : '';
+  var reason = code === 'permission-denied' ? '권한이 없습니다. 관리자 계정으로 다시 로그인해 주세요.'
+    : code === 'not-found' ? '사용자 문서를 찾을 수 없습니다.'
+    : code === 'unavailable' ? '네트워크 연결을 확인해 주세요.'
+    : (err && err.message ? err.message : '알 수 없는 오류');
+  alert(label + ' 처리에 실패했습니다.\n' + reason);
+}
+
 function adminApprove(uid) {
+  var name = _adminUserLabel(uid);
+  if (!confirm(name + ' 님을 승인하시겠습니까?')) return;
   db.collection('users').doc(uid).update({ status: 'approved' }).then(function() {
     sendApprovalEmail(uid, true);
     loadAdminUsers();
-  });
+    alert(name + ' 님이 승인 처리되었습니다.');
+  }, function(err) { _adminActionError('승인', err); });
 }
 
 function adminReject(uid) {
+  var name = _adminUserLabel(uid);
+  if (!confirm(name + ' 님을 거부 처리하시겠습니까?\n거부 후 해당 사용자는 시스템에 접근할 수 없습니다.')) return;
   db.collection('users').doc(uid).update({ status: 'rejected' }).then(function() {
     sendApprovalEmail(uid, false);
     loadAdminUsers();
-  });
+    alert(name + ' 님이 거부 처리되었습니다.');
+  }, function(err) { _adminActionError('거부', err); });
 }
 
 function adminResetDevices(uid) {

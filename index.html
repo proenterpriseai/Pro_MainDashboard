@@ -90,6 +90,8 @@ body{font-family:'Pretendard',sans-serif;background:#000;color:#e2e8f0;overflow:
 .hero-sub-br{display:none;}
 /* FEATURE_CEO_CARD 전용 (2026-11-04) — 법인 CEO 컨설팅이 들어간 서브 문장(16px 기준 533px)을 데스크톱 1줄로 유지. Flag off면 이 클래스를 붙이지 않음 */
 .hero-sub-wide{max-width:560px;}
+/* FEATURE_SOLE_CARD 전용 (2026-11-22) — '법인·개인사업자 컨설팅'이 들어간 서브 문장을 데스크톱 1줄로. Flag off면 이 클래스를 붙이지 않음 */
+.hero-sub-wider{max-width:640px;}
 /* FEATURE_CEO_CARD 접속 코드 창 (2026-11-04) — flag off면 이 마크업 자체가 DOM에 없음. 모달 틀은 기존 .pw-modal 재사용 */
 #ceoAccessModal .pw-modal{max-width:min(480px, calc(100% - 24px));}
 .ceo-access-code-row{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;}
@@ -597,6 +599,25 @@ body{font-family:'Pretendard',sans-serif;background:#000;color:#e2e8f0;overflow:
           </div>
           </template>
 
+          <!-- 카드 2-2: 개인사업자 컨설팅 (FEATURE_SOLE_CARD, 2026-11-22 — template이라 Flag off면 렌더·캐러셀 개수 영향 0, on이면 법인 CEO 컨설팅 다음 자리에 펼침) -->
+          <template id="soleCardTpl">
+          <div class="tool-card glow-target" onclick="openSoleAccessModal()">
+            <div class="glow-border"></div>
+            <div class="card-preview">
+              <img class="preview-img" src="preview-sole.webp" alt="개인사업자컨설팅" loading="lazy">
+              <div class="card-preview-bg" style="background:linear-gradient(135deg,#0b1f4d 0%,#2563eb 55%,#fbbf24 100%);opacity:0.35;"></div>
+              <div class="deco-circle c1"></div>
+              <div class="deco-circle c2"></div>
+              <div class="deco-grid"></div>
+            </div>
+            <div class="card-body">
+              <div class="card-title">개인사업자 컨설팅 <i class="fas fa-arrow-right arrow"></i></div>
+              <div class="card-desc card-desc-keep">사업자 세금 문제를 진단하고<br class="card-desc-br"> 절세·법인전환 방안을 설계합니다.</div>
+              <div class="card-tags"><span>종합소득세</span><span>자산관리</span><span>성실신고</span><span>법인전환</span><span>가업상속</span></div>
+            </div>
+          </div>
+          </template>
+
           <!-- 카드 3: 통합 계산기 -->
           <div class="tool-card glow-target" onclick="_trackOpen('통합 금융 계산기','https://pro-financecalculator.vercel.app/')">
             <div class="glow-border"></div>
@@ -887,6 +908,74 @@ function _ceoAccessCopy() {
 
 function _ceoAccessOpenSite() {
   _trackOpen('법인 CEO 컨설팅', CEO_SITE_URL);
+}
+</script>
+
+<script>
+/* ═══════════════════════════════════════
+   FEATURE_SOLE_CARD — 개인사업자 컨설팅 카드 (독립 블록, 2026-11-22)
+   법인 CEO 컨설팅 다음 자리에 카드 추가 + 히어로 "9대"(법인 카드 off면 "8대") 제목·서브 문장 교체.
+   카드 클릭 = 법인 CEO 컨설팅과 같은 접속 코드 창(같은 도메인 proceoconsulting.com · 같은 코드 · /api/ceo-access-code 그대로)을
+   제목·안내·열기 버튼만 바꿔 재사용. 기존 FEATURE_CEO_CARD 블록·함수는 무수정 — flag on일 때만 법인 카드 onclick 속성에 '법인 문구로 되돌리기'를 앞에 붙임
+   (캐러셀이 카드를 복제하기 전에 속성으로 바꿔야 복제본도 같게 동작 → 이 블록도 캐러셀 초기화 전 동기 실행 위치 유지).
+   Flag=false 시 template만 제거 → 기존 화면 그대로(영향 0)
+   ═══════════════════════════════════════ */
+var FEATURE_SOLE_CARD = false; // 실장 옵트인 실측 → 대표님 승인 후 true. 옵트인 테스트: sessionStorage._flag_sole_card='true' 후 새로고침
+var SOLE_SITE_URL = 'https://proceoconsulting.com/sole';
+
+function _isSoleCardOn() {
+  try {
+    var o = sessionStorage.getItem('_flag_sole_card');
+    if (o === 'true') return true;
+    if (o === 'false') return false;
+  } catch (_) { /* sessionStorage 차단 환경 → Flag 기본값 */ }
+  return FEATURE_SOLE_CARD;
+}
+
+(function () {
+  var tpl = document.getElementById('soleCardTpl');
+  if (!tpl) return;
+  var parent = tpl.parentNode;
+  if (_isSoleCardOn() && tpl.content) {
+    parent.insertBefore(document.importNode(tpl.content, true), tpl);
+    var ceoOn = typeof _isCeoCardOn === 'function' && _isCeoCardOn();
+    var t2 = document.querySelector('.hero-title .t2');
+    if (t2) t2.textContent = (ceoOn ? '9' : '8') + '대 핵심 AI 시스템';
+    var sub = document.querySelector('.hero-sub');
+    if (sub) {
+      sub.innerHTML = '보장 분석부터 DB 영업관리, ' + (ceoOn ? '법인·개인사업자' : '개인사업자') + ' 컨설팅,<br class="hero-sub-br"> 통합 금융 계산기, 전문 비서 챗봇까지.';
+      sub.classList.remove('hero-sub-wide');
+      sub.classList.add('hero-sub-wider');
+    }
+    /* 법인 카드를 누르면 창 문구를 법인용으로 되돌린 뒤 여는 기존 함수 호출(속성 문자열 — 캐러셀 복제본에도 그대로 복사됨) */
+    Array.prototype.forEach.call(parent.querySelectorAll('.tool-card[onclick="openCeoAccessModal()"]'), function (c) {
+      c.setAttribute('onclick', '_soleModalMode(false);openCeoAccessModal()');
+    });
+  }
+  parent.removeChild(tpl);
+})();
+
+var _soleModalOrig = null; // 법인 창의 원래 제목·안내·버튼(처음 바꿀 때 저장)
+/** 접속 코드 창을 개인사업자용(true) 또는 원래 법인용(false) 문구로 — 창이 없으면(법인 카드 off) false */
+function _soleModalMode(sole) {
+  var title = document.getElementById('ceoAccessTitle');
+  var overlay = document.getElementById('ceoAccessModal');
+  var note = overlay && overlay.querySelector('.ceo-access-note');
+  var btn = overlay && overlay.querySelector('.ceo-access-btns .confirm');
+  if (!title || !note || !btn) return false;
+  if (!_soleModalOrig) _soleModalOrig = { title: title.textContent, note: note.innerHTML, btn: btn.innerHTML };
+  title.textContent = sole ? '개인사업자 컨설팅 접속 코드' : _soleModalOrig.title;
+  note.innerHTML = sole ? '법인 CEO 컨설팅과 같은 코드입니다.<br>처음 한 번 입력하면 이 기기에서 30일간 유지됩니다.' : _soleModalOrig.note;
+  btn.innerHTML = sole ? '<i class="fas fa-arrow-up-right-from-square"></i> 개인사업자 컨설팅 열기' : _soleModalOrig.btn;
+  btn.setAttribute('onclick', sole ? '_soleAccessOpenSite()' : '_ceoAccessOpenSite()');
+  return true;
+}
+function openSoleAccessModal() {
+  if (!_soleModalMode(true)) { _trackOpen('개인사업자 컨설팅', SOLE_SITE_URL); return; } // 접속 코드 창이 없으면(법인 카드 off) 바로 열기 — 법인 카드 off일 때와 같은 동작
+  openCeoAccessModal();
+}
+function _soleAccessOpenSite() {
+  _trackOpen('개인사업자 컨설팅', SOLE_SITE_URL);
 }
 </script>
 

@@ -41,3 +41,24 @@ describe('개인사업자 컨설팅 카드', () => {
     assert.ok(html.includes("if (t2) t2.textContent = '8대 핵심 AI 시스템';"));
   });
 });
+
+describe('휴대폰 확인용 주소 옵트인(?sole_card=1/0)', () => {
+  const vm = require('node:vm');
+  const start = html.indexOf('/* 휴대폰 확인용'), end = html.indexOf('function _isSoleCardOn');
+  const code = html.slice(html.indexOf('(function () {', start), end);
+  function run(search) {
+    const store = {}, calls = [];
+    const ctx = { location: { search, pathname: '/', hash: '' }, sessionStorage: { setItem: (k, v) => { store[k] = v; } }, history: { replaceState: (a, b, u) => calls.push(u) } };
+    vm.runInNewContext(code, ctx);
+    return { store, calls };
+  }
+  it('sole_card=1 → 켬 · 주소에서 지움(다른 값은 유지)', () => {
+    const r = run('?x=2&sole_card=1');
+    assert.equal(r.store._flag_sole_card, 'true'); assert.deepEqual(r.calls, ['/?x=2']);
+  });
+  it('sole_card=0 → 끔 · 없거나 다른 값이면 무동작', () => {
+    assert.equal(run('?sole_card=0').store._flag_sole_card, 'false');
+    assert.equal(run('').calls.length, 0); assert.equal(run('?sole_card=yes').calls.length, 0); assert.equal(run('?xsole_card=1').calls.length, 0);
+  });
+  it('기본값은 여전히 false(주소 장치는 이 탭만)', () => { assert.match(html, /var FEATURE_SOLE_CARD = false;/); });
+});

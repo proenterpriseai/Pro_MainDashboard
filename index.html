@@ -920,8 +920,19 @@ function _ceoAccessOpenSite() {
    (캐러셀이 카드를 복제하기 전에 속성으로 바꿔야 복제본도 같게 동작 → 이 블록도 캐러셀 초기화 전 동기 실행 위치 유지).
    Flag=false 시 template만 제거 → 기존 화면 그대로(영향 0)
    ═══════════════════════════════════════ */
-var FEATURE_SOLE_CARD = false; // 실장 옵트인 실측 → 대표님 승인 후 true. 옵트인 테스트: sessionStorage._flag_sole_card='true' 후 새로고침
+var FEATURE_SOLE_CARD = false; // 실장 옵트인 실측 → 대표님 승인 후 true. 옵트인 테스트: sessionStorage._flag_sole_card='true' 후 새로고침 · 휴대폰(콘솔 없음) = 주소 뒤 ?sole_card=1 (끄기 ?sole_card=0)
 var SOLE_SITE_URL = 'https://proceoconsulting.com/sole';
+
+/* 휴대폰 확인용(2026-11-22 실장 요청): 주소의 sole_card=1/0을 이 탭의 옵트인 값으로 옮기고 주소창에서는 지움. 이 탭에만 적용(sessionStorage) — 다른 사용자 영향 0, 접속 코드는 여전히 승인 사용자만(서버 API) */
+(function () {
+  try {
+    var m = /(^|[?&])sole_card=([01])(?=&|$)/.exec((location.search || '').replace(/^\?/, ''));
+    if (!m) return;
+    sessionStorage.setItem('_flag_sole_card', m[2] === '1' ? 'true' : 'false');
+    var rest = (location.search || '').replace(/^\?/, '').split('&').filter(function (kv) { return kv && kv.indexOf('sole_card=') !== 0; }).join('&');
+    history.replaceState(null, '', location.pathname + (rest ? '?' + rest : '') + location.hash);
+  } catch (_) { /* sessionStorage·history 차단 환경 → 무시(Flag 기본값) */ }
+})();
 
 function _isSoleCardOn() {
   try {

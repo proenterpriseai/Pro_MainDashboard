@@ -12,8 +12,11 @@ const path = require('node:path');
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf-8');
 
 describe('개인사업자 컨설팅 카드', () => {
-  it('Flag 기본값 false — 옵트인은 sessionStorage._flag_sole_card', () => {
-    assert.match(html, /var FEATURE_SOLE_CARD = false;/);
+  it('Flag true 공개(2026-11-22) — 옵트아웃은 sessionStorage._flag_sole_card=false · SW 캐시에 이미지', () => {
+    assert.match(html, /var FEATURE_SOLE_CARD = true;/);
+    const sw = fs.readFileSync(path.join(__dirname, '..', 'sw.js'), 'utf-8');
+    assert.ok(sw.includes("'/preview-sole.webp'") && sw.includes("'pro-ai-v17'"));
+    assert.ok(html.includes('<meta property="og:description" content="보장 분석부터 DB 영업관리, 법인·개인사업자 컨설팅,'));
     assert.ok(html.includes("sessionStorage.getItem('_flag_sole_card')"));
   });
   it('template 안에만 카드 마크업 — 법인 카드 다음 · 통합 계산기 앞', () => {
@@ -60,5 +63,5 @@ describe('휴대폰 확인용 주소 옵트인(?sole_card=1/0)', () => {
     assert.equal(run('?sole_card=0').store._flag_sole_card, 'false');
     assert.equal(run('').calls.length, 0); assert.equal(run('?sole_card=yes').calls.length, 0); assert.equal(run('?xsole_card=1').calls.length, 0);
   });
-  it('기본값은 여전히 false(주소 장치는 이 탭만)', () => { assert.match(html, /var FEATURE_SOLE_CARD = false;/); });
+  it('공개 후에도 주소 장치는 이 탭만(=0이면 개인 옵트아웃)', () => { assert.match(html, /var FEATURE_SOLE_CARD = true;/); });
 });

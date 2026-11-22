@@ -3,13 +3,14 @@
 ## 🟢 현재 LIVE (이 줄을 배포마다 갱신)
 | 항목 | 값 |
 |---|---|
-| **버전** | **v=20261120a** (관리자 승인·거부 확인창·결과 알림 + 관리자 표 값 이스케이프, `c96a804`) / 이전 v=20261104b (🚀 **법인 CEO 컨설팅 카드 true 700명 공개** — 8대·카드 클릭=접속 코드 창, 대표님 명시 승인 2026-11-04) / 이전 v=20260918a (비번/이메일 셀프서비스 3종 완성) |
+| **버전** | **2026-11-22 `1204d2f`** (개인사업자 컨설팅 카드 **Flag false** — 화면 변화 0) / v=20261120a (관리자 승인·거부 확인창·결과 알림 + 관리자 표 값 이스케이프, `c96a804`) / 이전 v=20261104b (🚀 **법인 CEO 컨설팅 카드 true 700명 공개** — 8대·카드 클릭=접속 코드 창, 대표님 명시 승인 2026-11-04) / 이전 v=20260918a (비번/이메일 셀프서비스 3종 완성) |
 | **코드 커밋** | `c96a804` (관리자 승인·거부 알림·표 이스케이프, 2026-11-20) / `fde31b5` (법인 CEO 카드 true 공개, 2026-11-04) / `76983b7`·`b6b9c96` (접속 코드 창) / `a0b46ed` (카드 flag false) / `74f5a18` (flag 2종 true 공개) / `94cbba6` (이메일 찾기) / `00a9630` (이메일 힌트) / `ace37be` (서버 WIF 전환) — 전부 2026-09-18 / 이전: `e3f6321` (SW skipWaiting) / `825753d` (사번 fix) / `331a5f6` (change-email 도구) — 이후 docs 커밋은 LIVE 동작 무변경 |
 | **SW 캐시** | `pro-ai-v16` (sw.js, 2026-11-04 `preview-ceo.webp` 추가) |
 | **배포** | GitHub `proenterpriseai/Pro_MainDashboard` → Vercel `pro-dashboards.com` (push 시 자동, ~30초) |
-| **활성 Flag** | `FEATURE_SMS_PW_RESET=true` / `FEATURE_SMS_PW_EMAIL_HINT=true` / `FEATURE_EMAIL_FIND=true` (3종 700명 공개 — 뒤 2종 대표님 승인 2026-09-18) / `FEATURE_TEMP_PASSWORD=false`(미배포·조직정책 차단) / **`FEATURE_CEO_CARD=true`**(2026-11-04 700명 공개, 대표님 명시 승인 · 긴급 개인 옵트아웃 `sessionStorage._flag_ceo_card='false'`, 전체 롤백 = flag false 재배포) |
+| **활성 Flag** | `FEATURE_SMS_PW_RESET=true` / `FEATURE_SMS_PW_EMAIL_HINT=true` / `FEATURE_EMAIL_FIND=true` (3종 700명 공개 — 뒤 2종 대표님 승인 2026-09-18) / `FEATURE_TEMP_PASSWORD=false`(미배포·조직정책 차단) / **`FEATURE_CEO_CARD=true`**(2026-11-04 700명 공개, 대표님 명시 승인 · 긴급 개인 옵트아웃 `sessionStorage._flag_ceo_card='false'`, 전체 롤백 = flag false 재배포) / **`FEATURE_SOLE_CARD=false`**(2026-11-22 개인사업자 컨설팅 카드 · 옵트인 `sessionStorage._flag_sole_card='true'`) |
 | **사용자 규모** | users 156건 / employee_lookup 151건 (2026-07-28 실측) |
 
+- 2026-11-22 `1204d2f` — **개인사업자 컨설팅 카드 Flag false**(`FEATURE_SOLE_CARD`, 실장 기본안 승인·독립 리뷰 조건부 GO → 🔴 태그 6개로 카드 폭 409px(캐러셀 밀림) → 5개로 반영). 아래 "개인사업자 컨설팅 카드" 섹션 참조. 라이브 확인 = flag false·webp 200·SW v16 그대로·`_make-sole-preview.py` 404.
 - 2026-11-20 `c96a804` — **관리자 승인·거부 확인창·결과 알림 + 관리자 표 값 이스케이프**(실장 사전 승인·독립 리뷰 2회 GO·verify PASS, SW 캐시 무변경). 계기 = 거부 버튼이 성공·실패 모두 무표시. ① `adminApprove`/`adminReject` = 확인창 → 완료 알림 / 실패 알림(`_adminActionError`, `.then(성공, 실패)` 2인자 — 성공 뒤 예외를 실패로 오표시하지 않게) ② `loadAdminUsers` = 관리 버튼 대상은 **항상 문서 ID**(문서 안 `uid` 필드는 본인이 바꿀 수 있어 미신뢰 — ⛔`doc.data().uid`로 되돌리지 말 것) ③ `renderAdminTable` = 사번·이름·핸드폰·이메일 `_adminEsc`, 날짜 `_adminDate`, 기기 수는 배열일 때만, uid 형식 검사 후 onclick 삽입(⛔users 값은 가입자가 쓴 값 — innerHTML에 넣을 때 이스케이프 필수). **잔여(미착수, 실장 결정)**: `filterAdminTable`이 email·사번이 문자열이 아니면 검색 중 예외 / `adminResetDevices`·`adminWithdraw`·`loadAdminUsers` 실패 알림 없음 / 실제 관리자 화면 PC·모바일 실측은 실장 확인 대기.
 - 2026-11-04 `fde31b5` — 🚀 **법인 CEO 컨설팅 카드 true 700명 공개**(대표님 명시 승인·실장 옵트인 실측 PC·콘솔 users 규칙 확인·트리플 A GO): flag true + SW `pro-ai-v16`(+`preview-ceo.webp`) + meta/og/twitter description에 '법인 CEO 컨설팅'. 라이브 확인 = flag true·og 문구·SW v16·캐시 12경로 200·코드 API 401·SMS NO_MATCH. ▶카카오 OG 캐시 초기화(실장). `3f1a780` firestore.rules 콘솔 동기화·비사이트 파일 배포 제외.
 - 2026-11-04 `76983b7` — **카드 클릭 = 접속 코드 창 + `api/ceo-access-code.js`**(Flag false 유지, 트리플 A 조건부 GO → 🟡2 반영). 아래 "법인 CEO 컨설팅 카드" 섹션 참조. `e1c0187` 카드 설명 문구 변경.
@@ -73,6 +74,15 @@
 - **옵트인 실측**: `sessionStorage.setItem('_flag_ceo_card','true')` 후 새로고침 / 해제 `removeItem`.
 - **실측(로컬, 2026-11-04)**: off 7장(DOM 14)·점 7·7대 / on 8장(DOM 16)·점 8·8대·이미지 로드, 1440 = 서브 1줄·카드 상단 556.9 동일, 375 = 서브 2줄(높이·카드 상단 off와 동일 → 4구간 행간 세트 불변)·카드 설명 2줄·가로 넘침 0, 무한 루프 8장 순환·점 일치.
 - **▶ true 공개 시 같은 커밋에서 함께**: ① `sw.js` `urlsToCache`에 `'/preview-ceo.webp'` 추가 + `CACHE_NAME` bump(v15→v16) — **webp가 배포돼 있어야 함(404면 SW install 실패)** ② meta description·og:description·twitter:description(7·12·21행 부근) 문구에 법인 CEO 컨설팅 반영 검토 → 카카오 OG 캐시 초기화 ③ 640 블록 "해당 5개 카드만" 주석 → 6개 ④ GA `system_open`에 '법인 CEO 컨설팅' 신규 값 ⑤ 대표님 명시 승인 + 트리플 A ⑥ **대시보드 Vercel env `CEO_ACCESS_CODE` 등록·Redeploy 확인**(없으면 창에 '아직 등록되지 않았습니다') ⑦ **Firebase 콘솔 users 규칙 재확인**(create = status 'pending'만·본인 status 변경 불가) — 트리플 A 🔴 조건.
+
+## 👤 개인사업자 컨설팅 카드 (2026-11-22 `1204d2f` Flag false)
+- **대상**: `https://proceoconsulting.com/sole`(법인 컨설팅과 같은 레포·도메인·접속 코드 — 2026-11-22 `SOLE_APP` true 공개). 고객 데이터·백업은 법인과 분리.
+- **구조**: `<template id="soleCardTpl">` = 법인 카드 template 바로 다음. 독립 `<script>`(법인 카드 블록 뒤·Firebase SDK 앞 = 캐러셀 초기화 전 동기 실행 — ⛔위치 이동 금지)가 flag on이면 펼치고 히어로 `.t2` = 9대(법인 카드 off면 8대)·서브 '보장 분석부터 DB 영업관리, 법인·개인사업자 컨설팅,`<br class="hero-sub-br">` 통합 금융 계산기, 전문 비서 챗봇까지.' + `.hero-sub-wider`(640px, `-wide` 제거 — 16px 한 줄 569px). off면 template 제거 = 종전.
+- **카드 클릭 = 법인 접속 코드 창 재사용**: `openSoleAccessModal()` → `_soleModalMode(true)`(제목·안내·열기 버튼만 개인사업자용, 버튼 onclick `_soleAccessOpenSite()` → `/sole`) → `openCeoAccessModal()`. flag on이면 법인 카드 onclick 속성을 `_soleModalMode(false);openCeoAccessModal()`로 바꿔(복제 전) 문구를 되돌림. 법인 창이 없으면(법인 카드 off) `/sole` 바로 열기. 개인사업자 안내에는 '서버 동기화' 문장 없음(/sole에 기능 없음 — 의도). 기존 함수 수정 0.
+- **카드**: 제목 '개인사업자 컨설팅' · 설명 '사업자 세금 문제를 진단하고 / 절세·법인전환 방안을 설계합니다.' · 태그 **5개**(종합소득세·자산관리·성실신고·법인전환·가업상속 — 실장 순서). ⛔태그 6개 이상 금지: 데스크톱 카드 폭이 357px을 넘으면(6개 = 409px) `slideTo`(첫 카드 폭 × 순번)가 어긋나 캐러셀이 밀림 — 문구 바꾸면 폭 재실측. 바탕 `linear-gradient(135deg,#0b1f4d,#2563eb 55%,#fbbf24)`.
+- **이미지** `preview-sole.webp`(800×448, 22KB) — 파랑 톤 상가 거리(차양 점포)+금빛 그래프+동전(실장: 첫 청록 시안 반려). 재생성 `python -X utf8 _make-sole-preview.py preview-sole.webp`(배포 제외).
+- **실측(로컬)**: off = 8장·8대(종전) / on = 9장(DOM 18)·점 9·9대 · 1440 서브 1줄·카드 357px·태그 1줄 / 375 서브 2줄·카드 233px·높이 290(법인과 같음)·캐러셀 위치 377px 불변·넘침 0. 테스트 `tests/sole-card-tests.js`(5건).
+- **▶ true 공개 시 같은 커밋**: ① `sw.js` `urlsToCache` + `'/preview-sole.webp'`·`CACHE_NAME` v16→v17 ② meta·og·twitter description(7·12·21행)에 '법인·개인사업자 컨설팅' → 카카오 OG 캐시 초기화 ③ 640 블록 주석 '해당 6개 카드' → 7개 ④ GA `system_open` 새 값 '개인사업자 컨설팅' ⑤ 실장 옵트인 실측(PC+모바일) + 대표님 명시 승인.
 
 ## ⚠️ 도메인 규칙
 - 보장분석/DB영업관리: 반드시 `.com` 도메인 사용 (`.vercel.app` 금지)

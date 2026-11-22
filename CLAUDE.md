@@ -3,7 +3,7 @@
 ## 🟢 현재 LIVE (이 줄을 배포마다 갱신)
 | 항목 | 값 |
 |---|---|
-| **버전** | **2026-11-22 `1204d2f`** (개인사업자 컨설팅 카드 **Flag false** — 화면 변화 0) / v=20261120a (관리자 승인·거부 확인창·결과 알림 + 관리자 표 값 이스케이프, `c96a804`) / 이전 v=20261104b (🚀 **법인 CEO 컨설팅 카드 true 700명 공개** — 8대·카드 클릭=접속 코드 창, 대표님 명시 승인 2026-11-04) / 이전 v=20260918a (비번/이메일 셀프서비스 3종 완성) |
+| **버전** | **2026-11-22 `1b1b816`** (개인사업자 카드 휴대폰 확인 장치 `?sole_card=1` · 카드 **Flag false** `1204d2f` — 화면 변화 0) / v=20261120a (관리자 승인·거부 확인창·결과 알림 + 관리자 표 값 이스케이프, `c96a804`) / 이전 v=20261104b (🚀 **법인 CEO 컨설팅 카드 true 700명 공개** — 8대·카드 클릭=접속 코드 창, 대표님 명시 승인 2026-11-04) / 이전 v=20260918a (비번/이메일 셀프서비스 3종 완성) |
 | **코드 커밋** | `c96a804` (관리자 승인·거부 알림·표 이스케이프, 2026-11-20) / `fde31b5` (법인 CEO 카드 true 공개, 2026-11-04) / `76983b7`·`b6b9c96` (접속 코드 창) / `a0b46ed` (카드 flag false) / `74f5a18` (flag 2종 true 공개) / `94cbba6` (이메일 찾기) / `00a9630` (이메일 힌트) / `ace37be` (서버 WIF 전환) — 전부 2026-09-18 / 이전: `e3f6321` (SW skipWaiting) / `825753d` (사번 fix) / `331a5f6` (change-email 도구) — 이후 docs 커밋은 LIVE 동작 무변경 |
 | **SW 캐시** | `pro-ai-v16` (sw.js, 2026-11-04 `preview-ceo.webp` 추가) |
 | **배포** | GitHub `proenterpriseai/Pro_MainDashboard` → Vercel `pro-dashboards.com` (push 시 자동, ~30초) |
@@ -81,6 +81,7 @@
 - **카드 클릭 = 법인 접속 코드 창 재사용**: `openSoleAccessModal()` → `_soleModalMode(true)`(제목·안내·열기 버튼만 개인사업자용, 버튼 onclick `_soleAccessOpenSite()` → `/sole`) → `openCeoAccessModal()`. flag on이면 법인 카드 onclick 속성을 `_soleModalMode(false);openCeoAccessModal()`로 바꿔(복제 전) 문구를 되돌림. 법인 창이 없으면(법인 카드 off) `/sole` 바로 열기. 개인사업자 안내에는 '서버 동기화' 문장 없음(/sole에 기능 없음 — 의도). 기존 함수 수정 0.
 - **카드**: 제목 '개인사업자 컨설팅' · 설명 '사업자 세금 문제를 진단하고 / 절세·법인전환 방안을 설계합니다.' · 태그 **5개**(종합소득세·자산관리·성실신고·법인전환·가업상속 — 실장 순서). ⛔태그 6개 이상 금지: 데스크톱 카드 폭이 357px을 넘으면(6개 = 409px) `slideTo`(첫 카드 폭 × 순번)가 어긋나 캐러셀이 밀림 — 문구 바꾸면 폭 재실측. 바탕 `linear-gradient(135deg,#0b1f4d,#2563eb 55%,#fbbf24)`.
 - **이미지** `preview-sole.webp`(800×448, 22KB) — 파랑 톤 상가 거리(차양 점포)+금빛 그래프+동전(실장: 첫 청록 시안 반려). 재생성 `python -X utf8 _make-sole-preview.py preview-sole.webp`(배포 제외).
+- **휴대폰 확인 장치(`1b1b816`, 실장 요청)**: 주소 `https://pro-dashboards.com/?sole_card=1`(끄기 `=0`) → 이 탭 sessionStorage `_flag_sole_card`로 옮기고 주소창에서 지움(다른 쿼리 유지). 이 탭만·다른 사용자 영향 0·코드는 서버 API가 승인자만. 설치한 대시보드 앱 창(주소창 없음)은 해당 없음 → 휴대폰 브라우저로. 로컬 `_serve.js`는 `/?…`를 404로 처리 → 로컬 확인은 `/index.html?sole_card=1`. 테스트 +3.
 - **실측(로컬)**: off = 8장·8대(종전) / on = 9장(DOM 18)·점 9·9대 · 1440 서브 1줄·카드 357px·태그 1줄 / 375 서브 2줄·카드 233px·높이 290(법인과 같음)·캐러셀 위치 377px 불변·넘침 0. 테스트 `tests/sole-card-tests.js`(5건).
 - **▶ true 공개 시 같은 커밋**: ① `sw.js` `urlsToCache` + `'/preview-sole.webp'`·`CACHE_NAME` v16→v17 ② meta·og·twitter description(7·12·21행)에 '법인·개인사업자 컨설팅' → 카카오 OG 캐시 초기화 ③ 640 블록 주석 '해당 6개 카드' → 7개 ④ GA `system_open` 새 값 '개인사업자 컨설팅' ⑤ 실장 옵트인 실측(PC+모바일) + 대표님 명시 승인.
 

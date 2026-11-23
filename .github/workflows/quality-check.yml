@@ -17,3 +17,14 @@ jobs:
             -o /dev/null -s -w "HTTP %{http_code}\n" \
             https://pro-dashboards.com
           echo "✅ pro-dashboards.com 정상"
+
+  verify:
+    name: ESLint·테스트(npm run verify)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npm run verify

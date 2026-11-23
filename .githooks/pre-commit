@@ -1,0 +1,8 @@
+#!/bin/sh
+# 커밋 전 검사(2026-11-23 감사 P0 — 문서상 '트리플 체크 B'를 실제로 강제)
+# 설치(클론마다 1회): git config core.hooksPath .githooks
+# 내용 = npm run verify(ESLint + node 테스트). 우회(--no-verify) 금지.
+set -e
+cd "$(git rev-parse --show-toplevel)"
+echo "[pre-commit] npm run verify"
+npm run verify --silent

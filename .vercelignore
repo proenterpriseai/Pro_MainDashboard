@@ -15,3 +15,6 @@ _*.json
 firestore.rules
 firebase.json
 functions/
+# 커밋 전 검사 훅(사이트와 무관, 2026-11-23)
+.githooks/
+.gitattributes

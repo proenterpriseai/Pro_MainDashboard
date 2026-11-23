@@ -3,7 +3,7 @@
 ## 🟢 현재 LIVE (이 줄을 배포마다 갱신)
 | 항목 | 값 |
 |---|---|
-| **버전** | **2026-11-22 `bb4be8c`** (🚀 **개인사업자 컨설팅 카드 true 700명 공개** — 9대·SW v17, 대표님 승인) / `1b1b816` (휴대폰 확인 장치 `?sole_card=1`) / `1204d2f` (카드 Flag false) / v=20261120a (관리자 승인·거부 확인창·결과 알림 + 관리자 표 값 이스케이프, `c96a804`) / 이전 v=20261104b (🚀 **법인 CEO 컨설팅 카드 true 700명 공개** — 8대·카드 클릭=접속 코드 창, 대표님 명시 승인 2026-11-04) / 이전 v=20260918a (비번/이메일 셀프서비스 3종 완성) |
+| **버전** | 사이트 = **2026-11-22 `bb4be8c`** · 운영 = 2026-11-23 `c91ab04`(커밋 전 검사 훅 + CI verify job, 사이트 파일 무변경) · `79d63f6`(Deployment Checks 기록) / 이전 사이트 **2026-11-22 `bb4be8c`** (🚀 **개인사업자 컨설팅 카드 true 700명 공개** — 9대·SW v17, 대표님 승인) / `1b1b816` (휴대폰 확인 장치 `?sole_card=1`) / `1204d2f` (카드 Flag false) / v=20261120a (관리자 승인·거부 확인창·결과 알림 + 관리자 표 값 이스케이프, `c96a804`) / 이전 v=20261104b (🚀 **법인 CEO 컨설팅 카드 true 700명 공개** — 8대·카드 클릭=접속 코드 창, 대표님 명시 승인 2026-11-04) / 이전 v=20260918a (비번/이메일 셀프서비스 3종 완성) |
 | **코드 커밋** | `c96a804` (관리자 승인·거부 알림·표 이스케이프, 2026-11-20) / `fde31b5` (법인 CEO 카드 true 공개, 2026-11-04) / `76983b7`·`b6b9c96` (접속 코드 창) / `a0b46ed` (카드 flag false) / `74f5a18` (flag 2종 true 공개) / `94cbba6` (이메일 찾기) / `00a9630` (이메일 힌트) / `ace37be` (서버 WIF 전환) — 전부 2026-09-18 / 이전: `e3f6321` (SW skipWaiting) / `825753d` (사번 fix) / `331a5f6` (change-email 도구) — 이후 docs 커밋은 LIVE 동작 무변경 |
 | **SW 캐시** | `pro-ai-v17` (sw.js, 2026-11-22 `preview-sole.webp` 추가) |
 | **배포** | GitHub `proenterpriseai/Pro_MainDashboard` → Vercel `pro-dashboards.com` (push 시 자동, ~30초) · **2026-11-23 Vercel Deployment Checks = CI 작업 `ESLint·테스트(npm run verify)` 통과 후에만 도메인 연결**(실패 = 이전 화면 유지, 긴급 = Force Promote · 작업 이름 바꾸면 Vercel 설정도) · 커밋 전 검사 `.githooks/pre-commit`(클론마다 `git config core.hooksPath .githooks`) |
